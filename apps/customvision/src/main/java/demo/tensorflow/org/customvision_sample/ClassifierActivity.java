@@ -313,6 +313,7 @@ public class ClassifierActivity extends CameraActivity implements OnImageAvailab
                                 syncInProgress = false;
                                 updateSyncButton(false);
                                 restart();
+                                assets.notifyApplicationReady();
                             }
                         }, 1000);
                         android.app.AlertDialog.Builder dlgAlert = new android.app.AlertDialog.Builder(ClassifierActivity.this);

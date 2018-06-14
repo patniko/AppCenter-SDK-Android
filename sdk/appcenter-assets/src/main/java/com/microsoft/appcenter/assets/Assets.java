@@ -349,6 +349,17 @@ public class Assets extends AbstractAppCenterService {
         }
 
         /**
+         * Notifies that application has applied all the changes successfully.
+         */
+        public void notifyApplicationReady() {
+            try {
+                mAndroidCore.notifyApplicationReady();
+            } catch (AssetsNativeApiCallException e) {
+                AppCenterLog.error(LOG_TAG, e.getMessage());
+            }
+        }
+
+        /**
          * Adds listener for sync status change event.
          *
          * @param syncStatusListener listener for sync status change event.

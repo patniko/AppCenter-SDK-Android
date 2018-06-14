@@ -14,7 +14,6 @@ import com.microsoft.appcenter.assets.exceptions.AssetsMalformedDataException;
 import com.microsoft.appcenter.assets.exceptions.AssetsMergeException;
 import com.microsoft.appcenter.assets.exceptions.AssetsRollbackException;
 import com.microsoft.appcenter.assets.exceptions.AssetsSignatureVerificationException;
-import com.microsoft.appcenter.assets.exceptions.AssetsSignatureVerificationException.SignatureExceptionType;
 import com.microsoft.appcenter.assets.exceptions.AssetsUnzipException;
 import com.microsoft.appcenter.assets.interfaces.AssetsPlatformUtils;
 import com.microsoft.appcenter.assets.utils.AssetsUpdateUtils;
@@ -514,7 +513,7 @@ public class AssetsUpdateManager {
                     mAssetsUpdateUtils.verifyFolderHash(newUpdateFolderPath, newUpdateHash);
                     mAssetsUpdateUtils.verifyUpdateSignature(newUpdateFolderPath, newUpdateHash, stringPublicKey);
                 } else {
-                    throw new AssetsSignatureVerificationException(SignatureExceptionType.NO_SIGNATURE);
+                    throw new AssetsSignatureVerificationException(AssetsSignatureVerificationException.SignatureExceptionType.NO_SIGNATURE);
                 }
             } else {
                 if (isSignatureAppearedInApp) {

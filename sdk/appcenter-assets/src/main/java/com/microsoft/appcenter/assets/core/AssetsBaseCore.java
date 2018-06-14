@@ -917,7 +917,7 @@ public abstract class AssetsBaseCore {
         AssetsInstallMode resolvedInstallMode = localPackage.isMandatory() ? syncOptions.getMandatoryInstallMode() : syncOptions.getInstallMode();
         mState.mCurrentInstallModeInProgress = resolvedInstallMode;
         notifyAboutSyncStatusChange(AssetsSyncStatus.INSTALLING_UPDATE);
-        installUpdate(localPackage, resolvedInstallMode, syncOptions.getMinimumBackgroundDuration(), syncOptions.shouldRestart());
+        installUpdate(localPackage, resolvedInstallMode, syncOptions.getMinimumBackgroundDuration());
         notifyAboutSyncStatusChange(UPDATE_INSTALLED);
         mState.mSyncInProgress = false;
         if (resolvedInstallMode == IMMEDIATE && syncOptions.shouldRestart()) {
@@ -940,7 +940,7 @@ public abstract class AssetsBaseCore {
      * @throws AssetsNativeApiCallException if error occurred during the execution of operation.
      */
     @SuppressWarnings("WeakerAccess")
-    public void installUpdate(final AssetsLocalPackage updatePackage, final AssetsInstallMode installMode, final int minimumBackgroundDuration, boolean shouldSavePendingUpdate) throws AssetsNativeApiCallException {
+    public void installUpdate(final AssetsLocalPackage updatePackage, final AssetsInstallMode installMode, final int minimumBackgroundDuration) throws AssetsNativeApiCallException {
         try {
             mManagers.mUpdateManager.installPackage(updatePackage.getPackageHash(), mManagers.mSettingsManager.isPendingUpdate(null));
         } catch (AssetsInstallException | AssetsMalformedDataException e) {
@@ -949,7 +949,7 @@ public abstract class AssetsBaseCore {
         String pendingHash = updatePackage.getPackageHash();
         if (pendingHash == null) {
             throw new AssetsNativeApiCallException("Update package to be installed has no hash.");
-        } else if (shouldSavePendingUpdate){
+        } else {
             AssetsPendingUpdate pendingUpdate = new AssetsPendingUpdate();
             pendingUpdate.setPendingUpdateHash(pendingHash);
             pendingUpdate.setPendingUpdateIsLoading(false);
