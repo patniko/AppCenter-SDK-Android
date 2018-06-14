@@ -8,7 +8,6 @@ import com.microsoft.appcenter.distribute.Distribute;
 import com.microsoft.appcenter.distribute.DistributeListener;
 import com.microsoft.appcenter.distribute.ReleaseDetails;
 import com.microsoft.appcenter.distribute.UpdateAction;
-import com.microsoft.appcenter.sasquatch.R;
 
 public class SasquatchDistributeListener implements DistributeListener {
 
