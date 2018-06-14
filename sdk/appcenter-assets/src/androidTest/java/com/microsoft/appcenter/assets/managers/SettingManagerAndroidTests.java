@@ -75,6 +75,16 @@ public class SettingManagerAndroidTests {
     }
 
     /**
+     * {@link SettingsManager#getPendingUpdate()} should throw {@link AssetsMalformedDataException}
+     * if a json string representing pending update could not be parsed.
+     */
+    @Test(expected = AssetsMalformedDataException.class)
+    public void pendingUpdateFailsIfJsonParseError() throws Exception {
+        CommonSettingsCompatibilityUtils.saveStringToPending("123", InstrumentationRegistry.getContext());
+        mSettingsManager.getPendingUpdate();
+    }
+
+    /**
      * {@link SettingsManager#getPendingUpdate()} should return <code>null</code> if there is no info about the pending update.
      */
     @Test

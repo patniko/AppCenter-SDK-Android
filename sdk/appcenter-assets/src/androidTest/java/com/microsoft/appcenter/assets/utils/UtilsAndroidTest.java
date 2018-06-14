@@ -1,5 +1,11 @@
 package com.microsoft.appcenter.assets.utils;
 
+import android.content.Context;
+import android.support.test.InstrumentationRegistry;
+
+import com.microsoft.appcenter.assets.datacontracts.AssetsLocalPackage;
+import com.microsoft.appcenter.assets.datacontracts.AssetsPackage;
+import com.microsoft.appcenter.assets.exceptions.AssetsGeneralException;
 import com.microsoft.appcenter.assets.exceptions.AssetsMalformedDataException;
 
 import org.json.JSONException;
@@ -12,10 +18,12 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.Date;
 
 import static com.microsoft.appcenter.assets.testutils.CommonFileTestUtils.getRealNamedFileWithContent;
 import static com.microsoft.appcenter.assets.testutils.CommonFileTestUtils.getTestingDirectory;
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertTrue;
 
 /**
@@ -175,6 +183,112 @@ public class UtilsAndroidTest {
         String expectedString = "string";
         InputStream stream = new ByteArrayInputStream(expectedString.getBytes("UTF-8"));
         assertEquals(expectedString, mUtils.getStringFromInputStream(stream));
+    }
+
+    /**
+     * {@link AndroidUtils#isPackageLatest(AssetsLocalPackage, String, Context)} should return <code>false</code>
+     * if modification date of the update package differs from the binary resources modification time.
+     */
+    @Test
+    public void testIsPackageLatestFalseDateMismatch() throws Exception {
+        AndroidUtils androidUtils = AndroidUtils.getInstance();
+        AssetsPackage assetsPackage = new AssetsPackage();
+        AssetsLocalPackage assetsLocalPackage = AssetsLocalPackage.createLocalPackage(false, false, false, false, "", assetsPackage);
+        assetsLocalPackage.setBinaryModifiedTime(String.valueOf(new Date().getTime()));
+        String appVersion = "1.0";
+        assetsLocalPackage.setAppVersion(appVersion);
+        boolean isPackageLatest = androidUtils.isPackageLatest(assetsLocalPackage, appVersion, InstrumentationRegistry.getContext());
+        assertFalse(isPackageLatest);
+    }
+
+    /**
+     * {@link AndroidUtils#isPackageLatest(AssetsLocalPackage, String, Context)} should throw an {@link AssetsGeneralException}
+     * if it fails to parse package resources modification time.
+     */
+    @Test(expected = AssetsGeneralException.class)
+    public void testIsPackageLatestParseError() throws Exception {
+        AndroidUtils androidUtils = AndroidUtils.getInstance();
+        AssetsPackage assetsPackage = new AssetsPackage();
+        AssetsLocalPackage assetsLocalPackage = AssetsLocalPackage.createLocalPackage(false, false, false, false, "", assetsPackage);
+        assetsLocalPackage.setBinaryModifiedTime("fake");
+        String appVersion = "1.0";
+        assetsLocalPackage.setAppVersion(appVersion);
+        boolean isPackageLatest = androidUtils.isPackageLatest(assetsLocalPackage, appVersion, InstrumentationRegistry.getContext());
+        assertFalse(isPackageLatest);
+    }
+
+    /**
+     * {@link AndroidUtils#clearDebugCache(Context)} does nothing and succeeds.
+     */
+    @Test
+    public void testClearDebugCache() throws Exception {
+        AndroidUtils androidUtils = AndroidUtils.getInstance();
+        androidUtils.clearDebugCache(InstrumentationRegistry.getContext());
+    }
+
+    /**
+     * {@link AndroidUtils#isPackageLatest(AssetsLocalPackage, String, Context)} should return <code>false</code>
+     * if version of the update package differs from the binary resources version and
+     * modification time of the update package differs from the binary resources modification time, too.
+     */
+    @Test
+    public void testIsPackageLatestFalseDateVersionMismatch() throws Exception {
+        AndroidUtils androidUtils = AndroidUtils.getInstance();
+        AssetsPackage assetsPackage = new AssetsPackage();
+        AssetsLocalPackage assetsLocalPackage = AssetsLocalPackage.createLocalPackage(false, false, false, false, "", assetsPackage);
+        assetsLocalPackage.setBinaryModifiedTime(String.valueOf(new Date().getTime()));
+        String appVersion = "1.0";
+        assetsLocalPackage.setAppVersion(appVersion);
+        boolean isPackageLatest = androidUtils.isPackageLatest(assetsLocalPackage, "2.0", InstrumentationRegistry.getContext());
+        assertFalse(isPackageLatest);
+    }
+
+    /**
+     * {@link AndroidUtils#isPackageLatest(AssetsLocalPackage, String, Context)} should return <code>false</code>
+     * if modification date of the update resources is <code>null</code>.
+     */
+    @Test
+    public void testIsPackageLatestFalsePackageBinaryNull() throws Exception {
+        AndroidUtils androidUtils = AndroidUtils.getInstance();
+        AssetsPackage assetsPackage = new AssetsPackage();
+        AssetsLocalPackage assetsLocalPackage = AssetsLocalPackage.createLocalPackage(false, false, false, false, "", assetsPackage);
+        String appVersion = "1.0";
+        assetsLocalPackage.setAppVersion(appVersion);
+        boolean isPackageLatest = androidUtils.isPackageLatest(assetsLocalPackage, "2.0", InstrumentationRegistry.getContext());
+        assertFalse(isPackageLatest);
+    }
+
+    /**
+     * {@link AndroidUtils#isPackageLatest(AssetsLocalPackage, String, Context)} should return <code>true</code>
+     * if modification date of the update package matches with the binary resources modification time and
+     * the update package app version equals binary resources version.
+     */
+    @Test
+    public void testIsPackageLatestTrue() throws Exception {
+        AndroidUtils androidUtils = AndroidUtils.getInstance();
+        AssetsPackage assetsPackage = new AssetsPackage();
+        AssetsLocalPackage assetsLocalPackage = AssetsLocalPackage.createLocalPackage(false, false, false, false, "", assetsPackage);
+        assetsLocalPackage.setBinaryModifiedTime(String.valueOf(androidUtils.getBinaryResourcesModifiedTime(InstrumentationRegistry.getContext())));
+        String appVersion = "1.0";
+        assetsLocalPackage.setAppVersion(appVersion);
+        boolean isPackageLatest = androidUtils.isPackageLatest(assetsLocalPackage, appVersion, InstrumentationRegistry.getContext());
+        assertTrue(isPackageLatest);
+    }
+
+    /**
+     * {@link AndroidUtils#isPackageLatest(AssetsLocalPackage, String, Context)} should return <code>false</code>
+     * if version of the update package differs from the binary resources version.
+     */
+    @Test
+    public void testIsPackageLatestFalseVersionMismatch() throws Exception {
+        AndroidUtils androidUtils = AndroidUtils.getInstance();
+        AssetsPackage assetsPackage = new AssetsPackage();
+        AssetsLocalPackage assetsLocalPackage = AssetsLocalPackage.createLocalPackage(false, false, false, false, "", assetsPackage);
+        assetsLocalPackage.setBinaryModifiedTime(String.valueOf(androidUtils.getBinaryResourcesModifiedTime(InstrumentationRegistry.getContext())));
+        String appVersion = "1.0";
+        assetsLocalPackage.setAppVersion(appVersion);
+        boolean isPackageLatest = androidUtils.isPackageLatest(assetsLocalPackage, "2.0", InstrumentationRegistry.getContext());
+        assertFalse(isPackageLatest);
     }
 
     /**
