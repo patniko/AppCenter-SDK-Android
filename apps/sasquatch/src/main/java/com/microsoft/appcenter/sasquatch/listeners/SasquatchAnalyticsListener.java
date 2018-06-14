@@ -5,7 +5,6 @@ import android.support.annotation.VisibleForTesting;
 import android.support.test.espresso.idling.CountingIdlingResource;
 import android.widget.Toast;
 
-import com.microsoft.appcenter.analytics.channel.AnalyticsListener;
 import com.microsoft.appcenter.analytics.ingestion.models.EventLog;
 import com.microsoft.appcenter.analytics.ingestion.models.PageLog;
 import com.microsoft.appcenter.ingestion.models.LogWithProperties;
@@ -13,7 +12,7 @@ import com.microsoft.appcenter.sasquatch.R;
 
 import org.json.JSONObject;
 
-public class SasquatchAnalyticsListener implements AnalyticsListener {
+public class SasquatchAnalyticsListener implements com.microsoft.appcenter.analytics.channel.AnalyticsListener {
 
     @VisibleForTesting
     public static final CountingIdlingResource analyticsIdlingResource = new CountingIdlingResource("analytics");
