@@ -1,11 +1,11 @@
 package com.microsoft.appcenter.sasquatch.activities;
 
-
 import android.support.test.espresso.IdlingRegistry;
 import android.support.test.rule.ActivityTestRule;
 
 import com.microsoft.appcenter.Constants;
 import com.microsoft.appcenter.sasquatch.R;
+import com.microsoft.appcenter.sasquatch.listeners.SasquatchAnalyticsListener;
 
 import org.junit.Rule;
 import org.junit.Test;

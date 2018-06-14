@@ -98,7 +98,7 @@ public interface Channel {
         /**
          * Called whenever a new group is added.
          *
-         * @param groupName     group name.
+         * @param groupName group name.
          */
         void onGroupAdded(@NonNull String groupName);
 
