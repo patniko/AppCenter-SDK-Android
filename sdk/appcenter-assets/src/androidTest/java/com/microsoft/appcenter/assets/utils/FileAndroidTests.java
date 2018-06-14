@@ -82,7 +82,6 @@ public class FileAndroidTests {
      */
     @Test
     public void unzipSucceeds() throws Exception {
-        //TODO: Figure out why setLastModified fails.
         String zipEntryFileContent = "123";
         String zipFileName = "test.zip";
         String zipEntryFileName = "mytext.txt";
