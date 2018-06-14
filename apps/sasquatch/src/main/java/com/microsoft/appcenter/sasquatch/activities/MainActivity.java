@@ -31,7 +31,7 @@ import com.microsoft.appcenter.sasquatch.features.TestFeatures;
 import com.microsoft.appcenter.sasquatch.features.TestFeaturesListAdapter;
 import com.microsoft.appcenter.sasquatch.listeners.SasquatchAnalyticsListener;
 import com.microsoft.appcenter.sasquatch.listeners.SasquatchCrashesListener;
-import com.microsoft.appcenter.sasquatch.listeners.SasquatchDistributeListener;
+import com.microsoft.appcenter.sasquatch.SasquatchDistributeListener;
 import com.microsoft.appcenter.sasquatch.listeners.SasquatchPushListener;
 import com.microsoft.appcenter.utils.async.AppCenterConsumer;
 

@@ -19,7 +19,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.notNull;
-import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.times;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.verifyStatic;
@@ -66,13 +65,12 @@ public class EventLogFactoryTest {
         assertNotNull(convertedLogs);
         assertEquals(2, convertedLogs.size());
 
-        /* Check name was added. */
+        /* Check name and target token copy. */
         for (CommonSchemaLog commonSchemaLog : convertedLogs) {
-            verifyStatic();
-            PartAUtils.setName(same(commonSchemaLog), eq("test"));
+            assertEquals("test", commonSchemaLog.getName());
         }
 
-        /* Check Part A was added with target tokens. */
+        /* Check Part A was added. */
         verifyStatic();
         PartAUtils.addPartAFromLog(eq(log), notNull(CommonSchemaLog.class), eq("t1"));
         verifyStatic();

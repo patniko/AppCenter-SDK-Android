@@ -1,4 +1,4 @@
-package com.microsoft.appcenter.sasquatch.listeners;
+package com.microsoft.appcenter.sasquatch;
 
 import android.app.Activity;
 import android.content.DialogInterface;

@@ -3,12 +3,14 @@ package demo.tensorflow.org.customvision_sample.connection.model;
 /**
  * Custom vision images create batch (from file).
  */
-public class ImageFileCreateBatch extends ImageCreateBatch {
+public class ImageFileCreateBatch {
 
-    public ImageFileCreateBatch(String[] tagIds, ImageFileCreateEntry[] images) {
-        super(tagIds);
-        this.images = images;
-    }
+    private String[] tagIds;
 
     private ImageFileCreateEntry[] images;
+
+    public ImageFileCreateBatch(String[] tagIds, ImageFileCreateEntry[] images) {
+        this.tagIds = tagIds;
+        this.images = images;
+    }
 }

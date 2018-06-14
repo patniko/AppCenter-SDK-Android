@@ -33,7 +33,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.same;
+import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -49,8 +49,7 @@ public class OneCollectorChannelListenerTest {
         OneCollectorChannelListener listener = new OneCollectorChannelListener(mock(Context.class), channel, mock(LogSerializer.class), UUIDUtils.randomUUID());
 
         /* Mock group added. */
-        Channel.GroupListener groupListener = mock(Channel.GroupListener.class);
-        listener.onGroupAdded(TEST_GROUP, groupListener);
+        listener.onGroupAdded(TEST_GROUP);
 
         /* Verify one collector group added. */
         verify(channel).addGroup(eq(TEST_GROUP + ONE_COLLECTOR_GROUP_NAME_SUFFIX), eq(ONE_COLLECTOR_TRIGGER_COUNT), eq(ONE_COLLECTOR_TRIGGER_INTERVAL), eq(ONE_COLLECTOR_TRIGGER_MAX_PARALLEL_REQUESTS), argThat(new ArgumentMatcher<Ingestion>() {
@@ -59,10 +58,10 @@ public class OneCollectorChannelListenerTest {
             public boolean matches(Object argument) {
                 return argument instanceof OneCollectorIngestion;
             }
-        }), same(groupListener));
+        }), isNull(Channel.GroupListener.class));
 
         /* Mock one collector group added callback, should not loop indefinitely. */
-        listener.onGroupAdded(TEST_GROUP + ONE_COLLECTOR_GROUP_NAME_SUFFIX, groupListener);
+        listener.onGroupAdded(TEST_GROUP + ONE_COLLECTOR_GROUP_NAME_SUFFIX);
         verifyNoMoreInteractions(channel);
     }
 
@@ -167,27 +166,6 @@ public class OneCollectorChannelListenerTest {
         assertEquals((Long) 1L, log4.getExt().getSdk().getSeq());
         assertNotNull(log4.getExt().getSdk().getEpoch());
         assertNotEquals(log3.getExt().getSdk().getEpoch(), log4.getExt().getSdk().getEpoch());
-    }
-
-    @Test
-    public void validateCommonSchemaLogs() {
-
-        /* Setup mocks. */
-        Channel channel = mock(Channel.class);
-        LogSerializer logSerializer = mock(LogSerializer.class);
-        when(logSerializer.toCommonSchemaLog(any(Log.class))).thenThrow(new IllegalArgumentException());
-        Log log = mock(Log.class);
-        when(log.getTransmissionTargetTokens()).thenReturn(Collections.singleton("token"));
-
-        /* Init listener. */
-        OneCollectorChannelListener listener = new OneCollectorChannelListener(mock(Context.class), channel, logSerializer, UUIDUtils.randomUUID());
-        listener.onPreparedLog(log, TEST_GROUP);
-
-        /* Verify conversion attempted. */
-        verify(logSerializer).toCommonSchemaLog(any(Log.class));
-
-        /* Verify no enqueuing as the log was invalid. */
-        verify(channel, never()).enqueue(any(Log.class), anyString());
     }
 
     @Test
