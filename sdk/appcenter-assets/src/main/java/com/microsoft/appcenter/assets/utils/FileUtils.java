@@ -297,10 +297,12 @@ public class FileUtils {
                 }
             }
         }
+
         long time = entry.getTime();
+
         if (time > 0) {
             if (!file.setLastModified(time)) {
-                throw new IOException("Error while unzipping. Cannot set last modified time to file.");
+                AppCenterLog.info(Assets.LOG_TAG, "Error while unzipping. Cannot set last modified time to file.");
             }
         }
     }

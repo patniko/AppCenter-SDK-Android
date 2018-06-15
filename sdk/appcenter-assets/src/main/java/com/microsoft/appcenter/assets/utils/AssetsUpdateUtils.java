@@ -291,7 +291,22 @@ public class AssetsUpdateUtils {
      */
     @SuppressWarnings("WeakerAccess")
     public String getJWTFilePath(String updateFolderPath) {
-        return mFileUtils.appendPathComponent(updateFolderPath, AssetsConstants.BUNDLE_JWT_FILE_NAME);
+        if (new File(updateFolderPath, AssetsConstants.BUNDLE_JWT_FILE_NAME).exists()) {
+            return mFileUtils.appendPathComponent(updateFolderPath, AssetsConstants.BUNDLE_JWT_FILE_NAME);
+        } else {
+            File[] files = new File(updateFolderPath).listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        String path = getJWTFilePath(file.getPath());
+                        if (path != null) {
+                            return path;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**

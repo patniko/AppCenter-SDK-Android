@@ -84,6 +84,7 @@ public class AssetsSyncOptions {
         setMinimumBackgroundDuration(0);
         setIgnoreFailedUpdates(true);
         setCheckFrequency(AssetsCheckFrequency.ON_APP_START);
+        setShouldRestart(true);
     }
 
     /**
