@@ -13,7 +13,6 @@ android {
         versionCode 1
         versionName "1.0"
         consumerProguardFiles 'proguard-rules.pro'
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
     lintOptions {
@@ -49,6 +48,5 @@ dependencies {
     api project(':sdk:appcenter')
     compileOnly "com.android.support:support-annotations:+"
     compile 'com.nimbusds:nimbus-jose-jwt:5.3'
-    testCompile 'junit:junit:4.12'
     compile "com.google.code.gson:gson:2.8.2"
 }

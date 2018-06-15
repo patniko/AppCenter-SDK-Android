@@ -374,9 +374,6 @@ public abstract class AssetsBaseCore {
             } catch (AssetsGetPackageException e) {
                 throw new AssetsNativeApiCallException(e);
             }
-            if (previousPackage == null) {
-                return null;
-            }
             return previousPackage;
         } else {
 
