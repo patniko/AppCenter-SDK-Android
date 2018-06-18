@@ -34,18 +34,23 @@ import org.powermock.modules.junit4.rule.PowerMockRule;
 import static com.microsoft.appcenter.assets.core.CoreTestUtils.injectManagersInCore;
 import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.CHECKING_FOR_UPDATE;
 import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.SYNC_IN_PROGRESS;
+import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.UPDATE_INSTALLED;
 import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.UP_TO_DATE;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNull;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
+import static org.powermock.api.mockito.PowerMockito.spy;
+import static org.powermock.api.support.membermodification.MemberMatcher.method;
 
 //@RunWith(PowerMockRunner.class)
 @PrepareForTest({AssetsBaseCore.class, TextUtils.class})
@@ -115,6 +120,52 @@ public class AssetsAndroidCoreUnitTests {
 
         PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", CHECKING_FOR_UPDATE);
         PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", UP_TO_DATE);
+        assertFalse(assetsState.mSyncInProgress);
+    }
+
+    @Test
+    public void syncUpdateInstalledTest() throws Exception {
+        AssetsState assetsState = new AssetsState();
+        MemberModifier
+                .field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
+
+        when(mAssetsBaseCore.checkForUpdate()).thenReturn(null);
+
+        AssetsLocalPackage assetsLocalPackage = mock(AssetsLocalPackage.class);
+        when(assetsLocalPackage.isPending()).thenReturn(true);
+        when(mAssetsBaseCore.getCurrentPackage()).thenReturn(assetsLocalPackage);
+
+        doCallRealMethod().when(mAssetsBaseCore).sync();
+        doCallRealMethod().when(mAssetsBaseCore).sync(any(AssetsSyncOptions.class));
+        mAssetsBaseCore.sync();
+
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", CHECKING_FOR_UPDATE);
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", UPDATE_INSTALLED);
+        assertFalse(assetsState.mSyncInProgress);
+    }
+
+    @Test
+    public void syncDoDownloadAndInstallTest() throws Exception {
+        mAssetsBaseCore = spy(mAssetsBaseCore);
+
+        AssetsState assetsState = new AssetsState();
+        MemberModifier
+                .field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
+
+        AssetsRemotePackage assetsRemotePackage = new AssetsRemotePackage();
+        when(mAssetsBaseCore.checkForUpdate(any(String.class))).thenReturn(assetsRemotePackage);
+
+        MemberModifier
+                .stub(MemberMatcher.method(AssetsBaseCore.class,
+                        "doDownloadAndInstall"))
+                .toReturn(null);
+
+        doCallRealMethod().when(mAssetsBaseCore).sync();
+        doCallRealMethod().when(mAssetsBaseCore).sync(any(AssetsSyncOptions.class));
+        mAssetsBaseCore.sync();
+
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", CHECKING_FOR_UPDATE);
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("doDownloadAndInstall", assetsRemotePackage, any(AssetsSyncOptions.class), null);
         assertFalse(assetsState.mSyncInProgress);
     }
 
