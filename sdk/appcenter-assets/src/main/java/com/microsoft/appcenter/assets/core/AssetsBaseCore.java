@@ -453,8 +453,7 @@ public abstract class AssetsBaseCore {
         }
         AssetsRemotePackage update;
         try {
-            update = new AssetsAcquisitionManager(mUtilities.mUtils, mUtilities.mFileUtils)
-                    .queryUpdateWithCurrentPackage(config, queryPackage);
+            update = mManagers.mAcquisitionManager.queryUpdateWithCurrentPackage(config, queryPackage);
         } catch (AssetsQueryUpdateException e) {
             throw new AssetsNativeApiCallException(e);
         }
