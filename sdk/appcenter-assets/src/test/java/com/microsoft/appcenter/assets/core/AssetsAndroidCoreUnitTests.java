@@ -1,5 +1,7 @@
 package com.microsoft.appcenter.assets.core;
 
+import android.text.TextUtils;
+
 import com.microsoft.appcenter.assets.AssetsConfiguration;
 import com.microsoft.appcenter.assets.datacontracts.AssetsLocalPackage;
 import com.microsoft.appcenter.assets.datacontracts.AssetsPackage;
@@ -18,12 +20,15 @@ import com.microsoft.appcenter.assets.managers.SettingsManager;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.api.support.membermodification.MemberMatcher;
 import org.powermock.api.support.membermodification.MemberModifier;
 import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.modules.junit4.rule.PowerMockRule;
 
 import static com.microsoft.appcenter.assets.core.CoreTestUtils.injectManagersInCore;
@@ -32,12 +37,14 @@ import static junit.framework.Assert.assertNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 //@RunWith(PowerMockRunner.class)
-@PrepareForTest(AssetsBaseCore.class)
+@PrepareForTest({AssetsBaseCore.class, TextUtils.class})
 public class AssetsAndroidCoreUnitTests {
     private AssetsBaseCore mAssetsBaseCore;
     private final static String PACKAGE_HASH = "hash";
@@ -69,6 +76,27 @@ public class AssetsAndroidCoreUnitTests {
 
         PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", captor.capture());
         PowerMockito.verifyPrivate(mAssetsBaseCore, times(0)).invoke("getNativeConfiguration");
+    }
+
+    @Test(expected = AssetsNativeApiCallException.class)
+    public void syncOptionsNotDefinedTest() throws Exception {
+        AssetsSyncOptions assetsSyncOptions = mock(AssetsSyncOptions.class);
+        when(assetsSyncOptions.getDeploymentKey()).thenReturn(null, "fake-deployment-key", null);
+        when(assetsSyncOptions.getCheckFrequency()).thenReturn(null);
+        when(assetsSyncOptions.getInstallMode()).thenReturn(null);
+        when(assetsSyncOptions.getMandatoryInstallMode()).thenReturn(null);
+
+        when(mAssetsBaseCore.getNativeConfiguration()).thenReturn(new AssetsConfiguration());
+
+        PowerMockito.mockStatic(TextUtils.class);
+        PowerMockito.when(TextUtils.isEmpty(any(CharSequence.class))).thenReturn(true);
+
+        AssetsState assetsState = new AssetsState();
+        MemberModifier
+                .field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
+
+        doCallRealMethod().when(mAssetsBaseCore).sync(assetsSyncOptions);
+        mAssetsBaseCore.sync(assetsSyncOptions);
     }
 
     /**
