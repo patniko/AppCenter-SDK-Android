@@ -314,7 +314,7 @@ public class AssetsAndroidCoreUnitTests {
 
     /**
      * {@link AssetsBaseCore#checkForUpdate()} should return <code>null</code>
-     * if {@link AssetsLocalPackage#packageHash} <code>packageHash</code> equals {@link AssetsRemotePackage#packageHash}.
+     * if {@link AssetsLocalPackage#packageHash} equals {@link AssetsRemotePackage#packageHash}.
      */
     @Test
     public void checkForUpdateReturnsNullIfHashesEqual() throws Exception {
@@ -329,7 +329,7 @@ public class AssetsAndroidCoreUnitTests {
     /**
      * {@link AssetsBaseCore#checkForUpdate()} should return <code>null</code>
      * if {@link AssetsLocalPackage} equals <code>null</code> and
-     * {@link AssetsConfiguration#packageHash} <code>packageHash</code> equals {@link AssetsRemotePackage#packageHash}.
+     * {@link AssetsConfiguration#packageHash} equals {@link AssetsRemotePackage#packageHash}.
      */
     @SuppressWarnings("deprecation")
     @Test
@@ -345,7 +345,7 @@ public class AssetsAndroidCoreUnitTests {
     /**
      * {@link AssetsBaseCore#checkForUpdate()} should return valid package
      * if {@link AssetsLocalPackage} equals <code>null</code> and
-     * {@link AssetsConfiguration#packageHash} <code>packageHash</code> not equals {@link AssetsRemotePackage#packageHash}.
+     * {@link AssetsConfiguration#packageHash} not equals {@link AssetsRemotePackage#packageHash}.
      */
     @SuppressWarnings("deprecation")
     @Test
@@ -362,7 +362,7 @@ public class AssetsAndroidCoreUnitTests {
     /**
      * {@link AssetsBaseCore#checkForUpdate()} should return <code>null</code>
      * if {@link AssetsLocalPackage#isDebugOnly} equals <code>true</code> and
-     * {@link AssetsConfiguration#packageHash} <code>packageHash</code> equals {@link AssetsRemotePackage#packageHash}.
+     * {@link AssetsConfiguration#packageHash} equals {@link AssetsRemotePackage#packageHash}.
      */
     @Test
     public void checkForUpdateReturnsNullLocalIsDebugAndHashesEqual() throws Exception {
