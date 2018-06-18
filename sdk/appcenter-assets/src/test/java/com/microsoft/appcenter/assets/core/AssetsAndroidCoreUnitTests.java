@@ -32,7 +32,11 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.modules.junit4.rule.PowerMockRule;
 
 import static com.microsoft.appcenter.assets.core.CoreTestUtils.injectManagersInCore;
+import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.CHECKING_FOR_UPDATE;
+import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.SYNC_IN_PROGRESS;
+import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.UP_TO_DATE;
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -59,9 +63,6 @@ public class AssetsAndroidCoreUnitTests {
         mAssetsBaseCore = Mockito.mock(AssetsBaseCore.class);
     }
 
-    @Captor
-    ArgumentCaptor<AssetsSyncStatus> captor;
-
     @Test
     public void syncInProgressTest() throws Exception {
         AssetsState assetsState = new AssetsState();
@@ -74,7 +75,7 @@ public class AssetsAndroidCoreUnitTests {
         doCallRealMethod().when(mAssetsBaseCore).sync(any(AssetsSyncOptions.class));
         mAssetsBaseCore.sync();
 
-        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", captor.capture());
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", SYNC_IN_PROGRESS);
         PowerMockito.verifyPrivate(mAssetsBaseCore, times(0)).invoke("getNativeConfiguration");
     }
 
@@ -97,6 +98,24 @@ public class AssetsAndroidCoreUnitTests {
 
         doCallRealMethod().when(mAssetsBaseCore).sync(assetsSyncOptions);
         mAssetsBaseCore.sync(assetsSyncOptions);
+    }
+
+    @Test
+    public void syncUpToDateTest() throws Exception {
+        AssetsState assetsState = new AssetsState();
+        MemberModifier
+                .field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
+
+        when(mAssetsBaseCore.checkForUpdate()).thenReturn(null);
+        when(mAssetsBaseCore.getCurrentPackage()).thenReturn(null);
+
+        doCallRealMethod().when(mAssetsBaseCore).sync();
+        doCallRealMethod().when(mAssetsBaseCore).sync(any(AssetsSyncOptions.class));
+        mAssetsBaseCore.sync();
+
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", CHECKING_FOR_UPDATE);
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", UP_TO_DATE);
+        assertFalse(assetsState.mSyncInProgress);
     }
 
     /**
