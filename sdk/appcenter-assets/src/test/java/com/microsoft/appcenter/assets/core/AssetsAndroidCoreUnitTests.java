@@ -1,8 +1,9 @@
 package com.microsoft.appcenter.assets.core;
 
+import android.text.TextUtils;
+
 import com.microsoft.appcenter.assets.AssetsConfiguration;
 import com.microsoft.appcenter.assets.datacontracts.AssetsLocalPackage;
-import com.microsoft.appcenter.assets.datacontracts.AssetsPackage;
 import com.microsoft.appcenter.assets.datacontracts.AssetsRemotePackage;
 import com.microsoft.appcenter.assets.datacontracts.AssetsSyncOptions;
 import com.microsoft.appcenter.assets.enums.AssetsSyncStatus;
@@ -11,6 +12,7 @@ import com.microsoft.appcenter.assets.exceptions.AssetsGetPackageException;
 import com.microsoft.appcenter.assets.exceptions.AssetsIllegalArgumentException;
 import com.microsoft.appcenter.assets.exceptions.AssetsMalformedDataException;
 import com.microsoft.appcenter.assets.exceptions.AssetsNativeApiCallException;
+import com.microsoft.appcenter.assets.exceptions.AssetsQueryUpdateException;
 import com.microsoft.appcenter.assets.managers.AssetsAcquisitionManager;
 import com.microsoft.appcenter.assets.managers.AssetsUpdateManager;
 import com.microsoft.appcenter.assets.managers.SettingsManager;
@@ -26,7 +28,6 @@ import org.powermock.api.support.membermodification.MemberModifier;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.rule.PowerMockRule;
 
-import static com.microsoft.appcenter.assets.core.CoreTestUtils.injectManagersInCore;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
 import static org.mockito.Matchers.any;
@@ -36,13 +37,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+
+
 //@RunWith(PowerMockRunner.class)
-@PrepareForTest(AssetsBaseCore.class)
+@PrepareForTest({AssetsBaseCore.class, TextUtils.class})
 public class AssetsAndroidCoreUnitTests {
     private AssetsBaseCore mAssetsBaseCore;
-    private final static String PACKAGE_HASH = "hash";
-    private final static boolean FAILED_INSTALL = true;
-    private final static boolean IS_FIRST_RUN = false;
+    final static String PACKAGE_HASH = "hash";
+    final static boolean FAILED_INSTALL = true;
+    final static boolean IS_FIRST_RUN = false;
+    final static String DEPLOYMENT_KEY = "key";
+    private CoreTestUtils mCoreTestUtils;
 
     @Rule
     public PowerMockRule mPowerMockRule = new PowerMockRule();
@@ -50,10 +55,11 @@ public class AssetsAndroidCoreUnitTests {
     @Before
     public void setUp() {
         mAssetsBaseCore = Mockito.mock(AssetsBaseCore.class);
+        mCoreTestUtils = new CoreTestUtils(mAssetsBaseCore);
     }
 
     @Captor
-    ArgumentCaptor<AssetsSyncStatus> captor;
+    private ArgumentCaptor<AssetsSyncStatus> assetsSyncStatusArgumentCaptor;
 
     @Test
     public void syncInProgressTest() throws Exception {
@@ -67,24 +73,25 @@ public class AssetsAndroidCoreUnitTests {
         doCallRealMethod().when(mAssetsBaseCore).sync(any(AssetsSyncOptions.class));
         mAssetsBaseCore.sync();
 
-        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", captor.capture());
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", assetsSyncStatusArgumentCaptor.capture());
         PowerMockito.verifyPrivate(mAssetsBaseCore, times(0)).invoke("getNativeConfiguration");
     }
+
+    //region getUpdateMetadata
 
     /**
      * {@link AssetsBaseCore#getUpdateMetadata()} should throw {@link AssetsNativeApiCallException}
      * if a {@link AssetsGetPackageException} has occurred when trying to get package via
      * {@link AssetsUpdateManager#getCurrentPackage()}.
      */
+    @SuppressWarnings("unchecked")
     @Test(expected = AssetsNativeApiCallException.class)
     public void getUpdateMetadataFailsIfGetCurrentPackageFails() throws Exception {
         AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
         when(assetsUpdateManager.getCurrentPackage()).thenThrow(AssetsGetPackageException.class);
 
-        injectManagersInCore(assetsUpdateManager, mAssetsBaseCore);
-        doCallRealMethod().when(mAssetsBaseCore).getUpdateMetadata();
-        doCallRealMethod().when(mAssetsBaseCore).getUpdateMetadata(any(AssetsUpdateState.class));
-        mAssetsBaseCore.getUpdateMetadata();
+        mCoreTestUtils.injectManagersInCore(assetsUpdateManager);
+        mCoreTestUtils.callGetUpdateMetadata();
     }
 
     /**
@@ -96,11 +103,8 @@ public class AssetsAndroidCoreUnitTests {
         AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
         when(assetsUpdateManager.getCurrentPackage()).thenReturn(null);
 
-        injectManagersInCore(assetsUpdateManager, mAssetsBaseCore);
-        doCallRealMethod().when(mAssetsBaseCore).getUpdateMetadata();
-        doCallRealMethod().when(mAssetsBaseCore).getUpdateMetadata(any(AssetsUpdateState.class));
-
-        assertNull(mAssetsBaseCore.getUpdateMetadata());
+        mCoreTestUtils.injectManagersInCore(assetsUpdateManager);
+        mCoreTestUtils.assertGetUpdateMetadataReturnsNull();
     }
 
     /**
@@ -112,36 +116,35 @@ public class AssetsAndroidCoreUnitTests {
         AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
         SettingsManager settingsManager = mock(SettingsManager.class);
 
-        AssetsLocalPackage currentPackage = mock(AssetsLocalPackage.class);
-        when(currentPackage.getPackageHash()).thenReturn(PACKAGE_HASH);
-        when(assetsUpdateManager.getCurrentPackage()).thenReturn(currentPackage);
+        PowerMockito.mockStatic(TextUtils.class);
+
+        // An android class TextUtils does not work correctly in unit test section.
+        // We need to mock its methods if we want different behavior.
+        when(TextUtils.isEmpty(any(String.class))).thenReturn(true);
+
+        mCoreTestUtils.mockLocalPackageIntoUpdateManager(null, assetsUpdateManager);
         when(settingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenReturn(false);
 
-        injectManagersInCore(assetsUpdateManager, settingsManager, mAssetsBaseCore);
-        doCallRealMethod().when(mAssetsBaseCore).getUpdateMetadata(any(AssetsUpdateState.class));
-
-        assertNull(mAssetsBaseCore.getUpdateMetadata(AssetsUpdateState.PENDING));
+        mCoreTestUtils.injectManagersInCore(assetsUpdateManager, settingsManager);
+        mCoreTestUtils.assertGetUpdateMetadataReturnsNull(AssetsUpdateState.PENDING);
     }
 
     /**
      * {@link AssetsBaseCore#getUpdateMetadata()} should throw a {@link AssetsNativeApiCallException}
      * if {@link SettingsManager#isPendingUpdate(String)} throws {@link AssetsMalformedDataException}.
      */
+    @SuppressWarnings("unchecked")
     @Test(expected = AssetsNativeApiCallException.class)
     public void getUpdateMetadataFailsIfSettingsManagerThrows() throws Exception {
         AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
         SettingsManager settingsManager = mock(SettingsManager.class);
 
-        AssetsLocalPackage currentPackage = mock(AssetsLocalPackage.class);
-        when(currentPackage.getPackageHash()).thenReturn(PACKAGE_HASH);
-        when(assetsUpdateManager.getCurrentPackage()).thenReturn(currentPackage);
+        mCoreTestUtils.mockLocalPackageIntoUpdateManager(PACKAGE_HASH, assetsUpdateManager);
+
         when(settingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenThrow(AssetsMalformedDataException.class);
 
-        injectManagersInCore(assetsUpdateManager, settingsManager, mAssetsBaseCore);
-        doCallRealMethod().when(mAssetsBaseCore).getUpdateMetadata();
-        doCallRealMethod().when(mAssetsBaseCore).getUpdateMetadata(any(AssetsUpdateState.class));
-
-        mAssetsBaseCore.getUpdateMetadata();
+        mCoreTestUtils.injectManagersInCore(assetsUpdateManager, settingsManager);
+        mCoreTestUtils.callGetUpdateMetadata();
     }
 
     /**
@@ -153,17 +156,15 @@ public class AssetsAndroidCoreUnitTests {
         AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
         SettingsManager settingsManager = mock(SettingsManager.class);
 
-        AssetsLocalPackage currentPackage = mock(AssetsLocalPackage.class);
+        mCoreTestUtils.mockLocalPackageIntoUpdateManager(PACKAGE_HASH, assetsUpdateManager);
+
         AssetsLocalPackage previousPackage = mock(AssetsLocalPackage.class);
-        when(currentPackage.getPackageHash()).thenReturn(PACKAGE_HASH);
-        when(assetsUpdateManager.getCurrentPackage()).thenReturn(currentPackage);
         when(assetsUpdateManager.getPreviousPackage()).thenReturn(previousPackage);
         when(settingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenReturn(true);
 
-        injectManagersInCore(assetsUpdateManager, settingsManager, mAssetsBaseCore);
-        doCallRealMethod().when(mAssetsBaseCore).getUpdateMetadata(any(AssetsUpdateState.class));
+        mCoreTestUtils.injectManagersInCore(assetsUpdateManager, settingsManager);
 
-        assertEquals(mAssetsBaseCore.getUpdateMetadata(null), previousPackage);
+        assertEquals(mCoreTestUtils.callGetUpdateMetadata(null), previousPackage);
     }
 
     /**
@@ -171,21 +172,19 @@ public class AssetsAndroidCoreUnitTests {
      * if {@link AssetsUpdateState#RUNNING} was requested, current package is pending,
      * and {@link AssetsUpdateManager#getPreviousPackage()} throws {@link AssetsGetPackageException}.
      */
+    @SuppressWarnings("unchecked")
     @Test(expected = AssetsNativeApiCallException.class)
     public void getUpdateMetadataFailsIFGetPreviousPackageFails() throws Exception {
         AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
         SettingsManager settingsManager = mock(SettingsManager.class);
 
-        AssetsLocalPackage currentPackage = mock(AssetsLocalPackage.class);
-        when(currentPackage.getPackageHash()).thenReturn(PACKAGE_HASH);
-        when(assetsUpdateManager.getCurrentPackage()).thenReturn(currentPackage);
+        mCoreTestUtils.mockLocalPackageIntoUpdateManager(PACKAGE_HASH, assetsUpdateManager);
+
         when(assetsUpdateManager.getPreviousPackage()).thenThrow(AssetsGetPackageException.class);
         when(settingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenReturn(true);
 
-        injectManagersInCore(assetsUpdateManager, settingsManager, mAssetsBaseCore);
-        doCallRealMethod().when(mAssetsBaseCore).getUpdateMetadata(any(AssetsUpdateState.class));
-
-        mAssetsBaseCore.getUpdateMetadata(null);
+        mCoreTestUtils.injectManagersInCore(assetsUpdateManager, settingsManager);
+        mCoreTestUtils.callGetUpdateMetadata(null);
     }
 
     /**
@@ -194,15 +193,29 @@ public class AssetsAndroidCoreUnitTests {
      */
     @Test
     public void getUpdateMetadataReturnsPendingIfRequested() throws Exception {
-        prepareGetPendingUpdateWorkflow();
+        mCoreTestUtils.prepareGetUpdateWorkflow(true);
 
         AssetsState assetsState = new AssetsState();
         assetsState.mIsRunningBinaryVersion = false;
         MemberModifier.field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
-        doCallRealMethod().when(mAssetsBaseCore).getUpdateMetadata();
 
-        doCallRealMethod().when(mAssetsBaseCore).getUpdateMetadata(any(AssetsUpdateState.class));
-        AssetsLocalPackage returnedPackage = getPendingUpdatePackage();
+        AssetsLocalPackage returnedPackage = mCoreTestUtils.getUpdatePackage(true);
+        assertEquals(returnedPackage.isDebugOnly(), false);
+    }
+
+    /**
+     * {@link AssetsBaseCore#getUpdateMetadata()} should return the valid running package
+     * if {@link AssetsUpdateState#RUNNING} was requested and current package is not pending.
+     */
+    @Test
+    public void getUpdateMetadataReturnsRunningIfRequested() throws Exception {
+        mCoreTestUtils.prepareGetUpdateWorkflow(false);
+
+        AssetsState assetsState = new AssetsState();
+        assetsState.mIsRunningBinaryVersion = false;
+        MemberModifier.field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
+
+        AssetsLocalPackage returnedPackage = mCoreTestUtils.getUpdatePackage(false);
         assertEquals(returnedPackage.isDebugOnly(), false);
     }
 
@@ -214,62 +227,30 @@ public class AssetsAndroidCoreUnitTests {
      */
     @Test
     public void getUpdateMetadataReturnsPendingIfRequestedRunningBinaryVersion() throws Exception {
-        prepareGetPendingUpdateWorkflow();
+        mCoreTestUtils.prepareGetUpdateWorkflow(true);
 
         AssetsState assetsState = new AssetsState();
         assetsState.mIsRunningBinaryVersion = true;
         MemberModifier.field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
 
-        AssetsLocalPackage returnedPackage = getPendingUpdatePackage();
+        AssetsLocalPackage returnedPackage = mCoreTestUtils.getUpdatePackage(true);
         assertEquals(returnedPackage.isDebugOnly(), true);
     }
+    //endregion
 
-    /**
-     * Retrieves and checks pending update package.
-     *
-     * @return pending update package.
-     */
-    private AssetsLocalPackage getPendingUpdatePackage() throws Exception {
-        AssetsLocalPackage returnedPackage = mAssetsBaseCore.getUpdateMetadata(AssetsUpdateState.PENDING);
-        assertEquals(returnedPackage.getPackageHash(), PACKAGE_HASH);
-        assertEquals(returnedPackage.isPending(), true);
-        assertEquals(returnedPackage.isFailedInstall(), FAILED_INSTALL);
-        assertEquals(returnedPackage.isFirstRun(), IS_FIRST_RUN);
-        return returnedPackage;
-    }
-
-    /**
-     * Prepares classes for testing {@link AssetsAndroidCore#getUpdateMetadata()} workflow
-     * which should return a pending update.
-     */
-    private void prepareGetPendingUpdateWorkflow() throws Exception {
-        AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
-        SettingsManager settingsManager = mock(SettingsManager.class);
-
-        AssetsLocalPackage currentPackage = AssetsLocalPackage.createEmptyPackageForCheckForUpdateQuery("1.0");
-        currentPackage.setPackageHash(PACKAGE_HASH);
-        currentPackage.setDebugOnly(false);
-        when(assetsUpdateManager.getCurrentPackage()).thenReturn(currentPackage);
-        when(settingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenReturn(true);
-
-        injectManagersInCore(assetsUpdateManager, settingsManager, mAssetsBaseCore);
-        when(mAssetsBaseCore.existsFailedUpdate(eq(PACKAGE_HASH))).thenReturn(FAILED_INSTALL);
-        when(mAssetsBaseCore.isFirstRun(eq(PACKAGE_HASH))).thenReturn(IS_FIRST_RUN);
-        doCallRealMethod().when(mAssetsBaseCore).getUpdateMetadata(any(AssetsUpdateState.class));
-    }
+    //region checkForUpdate
 
     /**
      * {@link AssetsBaseCore#checkForUpdate()} should throw a {@link AssetsNativeApiCallException}
-     * if setting configuration deployemnt key has thrown {@link AssetsIllegalArgumentException}.
+     * if setting configuration deployment key has thrown {@link AssetsIllegalArgumentException}.
      */
+    @SuppressWarnings("unchecked")
     @Test(expected = AssetsNativeApiCallException.class)
     public void checkForUpdateFailsIfSetDepKeyThrows() throws Exception {
         AssetsConfiguration configuration = mock(AssetsConfiguration.class);
-        String deploymentKey = "key";
-        when(configuration.setDeploymentKey(deploymentKey)).thenThrow(AssetsIllegalArgumentException.class);
+        when(configuration.setDeploymentKey(DEPLOYMENT_KEY)).thenThrow(AssetsIllegalArgumentException.class);
         when(mAssetsBaseCore.getNativeConfiguration()).thenReturn(configuration);
-        doCallRealMethod().when(mAssetsBaseCore).checkForUpdate(any(String.class));
-        mAssetsBaseCore.checkForUpdate(deploymentKey);
+        mCoreTestUtils.callCheckForUpdate();
     }
 
     /**
@@ -277,27 +258,140 @@ public class AssetsAndroidCoreUnitTests {
      */
     @Test
     public void checkForUpdateReturnPackage() throws Exception {
-        AssetsConfiguration configuration = mock(AssetsConfiguration.class);
-        String deploymentKey = "key";
-        when(mAssetsBaseCore.getNativeConfiguration()).thenReturn(configuration);
-        when(configuration.setDeploymentKey(eq(deploymentKey))).thenReturn(null);
-        doCallRealMethod().when(mAssetsBaseCore).checkForUpdate(any(String.class));
-
-        AssetsLocalPackage currentPackage = mock(AssetsLocalPackage.class);
-        when(currentPackage.getPackageHash()).thenReturn("");
-        when(mAssetsBaseCore.getCurrentPackage()).thenReturn(currentPackage);
-        AssetsAcquisitionManager assetsAcquisitionManager = mock(AssetsAcquisitionManager.class);
-
-        AssetsPackage assetsPackage = new AssetsPackage();
-        assetsPackage.setPackageHash(PACKAGE_HASH);
-        AssetsRemotePackage assetsRemotePackage = AssetsRemotePackage.createRemotePackage(false, 1000, "", false, assetsPackage);
-
-        when(assetsAcquisitionManager.queryUpdateWithCurrentPackage(eq(configuration), eq(currentPackage))).thenReturn(assetsRemotePackage);
-        injectManagersInCore(assetsAcquisitionManager, mAssetsBaseCore);
-        when(mAssetsBaseCore.existsFailedUpdate(eq(PACKAGE_HASH))).thenReturn(FAILED_INSTALL);
-        AssetsRemotePackage returnedPackage = mAssetsBaseCore.checkForUpdate(deploymentKey);
-
-        assertEquals(returnedPackage.getDeploymentKey(), deploymentKey);
+        mCoreTestUtils.prepareCheckForUpdate();
+        AssetsRemotePackage returnedPackage = mCoreTestUtils.callCheckForUpdate();
+        assertEquals(returnedPackage.getDeploymentKey(), DEPLOYMENT_KEY);
         assertEquals(returnedPackage.isFailedInstall(), FAILED_INSTALL);
     }
+
+    /**
+     * {@link AssetsBaseCore#checkForUpdate()} should return a valid {@link AssetsRemotePackage}
+     * if passed <code>deploymentKey</code> equals <code>null</code>.
+     */
+    @Test
+    public void checkForUpdateReturnPackageDeploymentKeyNull() throws Exception {
+        mCoreTestUtils.prepareCheckForUpdate();
+        AssetsRemotePackage returnedPackage = mCoreTestUtils.callCheckForUpdate(null);
+        assertNull(returnedPackage.getDeploymentKey());
+        assertEquals(returnedPackage.isFailedInstall(), FAILED_INSTALL);
+    }
+
+    /**
+     * {@link AssetsBaseCore#checkForUpdate()} should return <code>null</code>
+     * if {@link AssetsAcquisitionManager#queryUpdateWithCurrentPackage(AssetsConfiguration, AssetsLocalPackage)}
+     * returns <code>null</code>
+     */
+    @Test
+    public void checkForUpdateReturnsNullOnNullPackage() throws Exception {
+        AssetsConfiguration configuration = mCoreTestUtils.mockConfiguration(null);
+        AssetsLocalPackage currentPackage = mCoreTestUtils.mockLocalPackage();
+
+        mCoreTestUtils.mockAcquisitionManager(configuration, currentPackage, null);
+        mCoreTestUtils.assertCheckForUpdateReturnsNull();
+    }
+
+    @Captor
+    private ArgumentCaptor<AssetsRemotePackage> assetsRemotePackageArgumentCaptor;
+
+    /**
+     * {@link AssetsBaseCore#checkForUpdate()} should return <code>null</code>
+     * and call {@link AssetsBaseCore#notifyAboutBinaryVersionMismatchChange(AssetsRemotePackage)}
+     * if {@link AssetsAcquisitionManager#queryUpdateWithCurrentPackage(AssetsConfiguration, AssetsLocalPackage)}
+     * returns a {@link AssetsRemotePackage} where <code>isUpdateAppVersion</code> equals <code>true</code>.
+     */
+    @Test
+    public void checkForUpdateReturnsNullIfUpdateAppVersion() throws Exception {
+        AssetsConfiguration configuration = mCoreTestUtils.mockConfiguration(null);
+        AssetsLocalPackage currentPackage = mCoreTestUtils.mockLocalPackage("");
+        AssetsRemotePackage assetsRemotePackage = mCoreTestUtils.createFakeRemotePackageUpdateAppVersion();
+        mCoreTestUtils.mockAcquisitionManager(configuration, currentPackage, assetsRemotePackage);
+
+        mCoreTestUtils.assertCheckForUpdateReturnsNull();
+
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutBinaryVersionMismatchChange", assetsRemotePackageArgumentCaptor.capture());
+        assertEquals(assetsRemotePackageArgumentCaptor.getValue(), assetsRemotePackage);
+    }
+
+    /**
+     * {@link AssetsBaseCore#checkForUpdate()} should return <code>null</code>
+     * if {@link AssetsLocalPackage#packageHash} <code>packageHash</code> equals {@link AssetsRemotePackage#packageHash}.
+     */
+    @Test
+    public void checkForUpdateReturnsNullIfHashesEqual() throws Exception {
+        AssetsConfiguration configuration = mCoreTestUtils.mockConfiguration(null);
+        AssetsLocalPackage currentPackage = mCoreTestUtils.mockLocalPackage(PACKAGE_HASH);
+        AssetsRemotePackage assetsRemotePackage = mCoreTestUtils.createFakeRemotePackage();
+        mCoreTestUtils.mockAcquisitionManager(configuration, currentPackage, assetsRemotePackage);
+
+        mCoreTestUtils.assertCheckForUpdateReturnsNull();
+    }
+
+    /**
+     * {@link AssetsBaseCore#checkForUpdate()} should return <code>null</code>
+     * if {@link AssetsLocalPackage} equals <code>null</code> and
+     * {@link AssetsConfiguration#packageHash} <code>packageHash</code> equals {@link AssetsRemotePackage#packageHash}.
+     */
+    @SuppressWarnings("deprecation")
+    @Test
+    public void checkForUpdateReturnsNullIfHashEqualAndNoLocal() throws Exception {
+        AssetsConfiguration configuration = mCoreTestUtils.mockConfiguration(PACKAGE_HASH);
+        when(mAssetsBaseCore.getCurrentPackage()).thenReturn(null);
+        AssetsRemotePackage assetsRemotePackage = mCoreTestUtils.createFakeRemotePackage();
+        mCoreTestUtils.mockAcquisitionManager(configuration, null, assetsRemotePackage);
+
+        mCoreTestUtils.assertCheckForUpdateReturnsNull();
+    }
+
+    /**
+     * {@link AssetsBaseCore#checkForUpdate()} should return valid package
+     * if {@link AssetsLocalPackage} equals <code>null</code> and
+     * {@link AssetsConfiguration#packageHash} <code>packageHash</code> not equals {@link AssetsRemotePackage#packageHash}.
+     */
+    @SuppressWarnings("deprecation")
+    @Test
+    public void checkForUpdateReturnsWithNoLocal() throws Exception {
+        AssetsConfiguration configuration = mCoreTestUtils.mockConfiguration("");
+        when(mAssetsBaseCore.getCurrentPackage()).thenReturn(null);
+        AssetsRemotePackage assetsRemotePackage = mCoreTestUtils.createFakeRemotePackage();
+        mCoreTestUtils.mockAcquisitionManager(configuration, null, assetsRemotePackage);
+
+        AssetsRemotePackage returnedPackage = mCoreTestUtils.callCheckForUpdate();
+        assertEquals(returnedPackage.getPackageHash(), PACKAGE_HASH);
+    }
+
+    /**
+     * {@link AssetsBaseCore#checkForUpdate()} should return <code>null</code>
+     * if {@link AssetsLocalPackage#isDebugOnly} equals <code>true</code> and
+     * {@link AssetsConfiguration#packageHash} <code>packageHash</code> equals {@link AssetsRemotePackage#packageHash}.
+     */
+    @Test
+    public void checkForUpdateReturnsNullLocalIsDebugAndHashesEqual() throws Exception {
+        AssetsConfiguration configuration = mCoreTestUtils.mockConfiguration(PACKAGE_HASH);
+        AssetsLocalPackage currentPackage = mCoreTestUtils.mockLocalPackage(PACKAGE_HASH);
+        when(currentPackage.isDebugOnly()).thenReturn(true);
+        AssetsRemotePackage assetsRemotePackage = mCoreTestUtils.createFakeRemotePackage();
+        mCoreTestUtils.mockAcquisitionManager(configuration, null, assetsRemotePackage);
+
+        mCoreTestUtils.assertCheckForUpdateReturnsNull();
+    }
+
+    /**
+     * {@link AssetsBaseCore#checkForUpdate()} should throw a {@link AssetsNativeApiCallException}
+     * if {@link AssetsAcquisitionManager#queryUpdateWithCurrentPackage(AssetsConfiguration, AssetsLocalPackage)}
+     * throws a {@link AssetsQueryUpdateException}.
+     */
+    @SuppressWarnings({"unchecked", "deprecation"})
+    @Test(expected = AssetsNativeApiCallException.class)
+    public void checkForUpdateFailsIfQueryThrows() throws Exception {
+        AssetsConfiguration configuration = mCoreTestUtils.mockConfiguration(null);
+        when(configuration.getAppVersion()).thenReturn("1.0");
+        when(mAssetsBaseCore.getCurrentPackage()).thenReturn(null);
+        AssetsAcquisitionManager assetsAcquisitionManager = mock(AssetsAcquisitionManager.class);
+
+        when(assetsAcquisitionManager.queryUpdateWithCurrentPackage(eq(configuration), any(AssetsLocalPackage.class))).thenThrow(AssetsQueryUpdateException.class);
+        mCoreTestUtils.injectManagersInCore(assetsAcquisitionManager);
+        mCoreTestUtils.callCheckForUpdate(DEPLOYMENT_KEY);
+    }
+
+    //endregion
 }
