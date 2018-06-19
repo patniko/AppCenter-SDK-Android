@@ -1,5 +1,7 @@
 package com.microsoft.appcenter.assets.core;
 
+import android.text.TextUtils;
+
 import com.microsoft.appcenter.assets.AssetsConfiguration;
 import com.microsoft.appcenter.assets.datacontracts.AssetsLocalPackage;
 import com.microsoft.appcenter.assets.datacontracts.AssetsPackage;
@@ -9,6 +11,7 @@ import com.microsoft.appcenter.assets.managers.AssetsAcquisitionManager;
 import com.microsoft.appcenter.assets.managers.AssetsUpdateManager;
 import com.microsoft.appcenter.assets.managers.SettingsManager;
 
+import org.powermock.api.mockito.PowerMockito;
 import org.powermock.api.support.membermodification.MemberModifier;
 
 import static com.microsoft.appcenter.assets.core.AssetsAndroidCoreUnitTests.DEPLOYMENT_KEY;
@@ -292,5 +295,14 @@ public class CoreTestUtils {
      */
     public void assertGetUpdateMetadataReturnsNull() throws Exception {
         assertNull(callGetUpdateMetadata());
+    }
+
+
+    public void mockTextUtils() {
+        PowerMockito.mockStatic(TextUtils.class);
+
+        // An android class TextUtils does not work correctly in unit test section.
+        // We need to mock its methods if we want different behavior.
+        when(TextUtils.isEmpty(any(String.class))).thenReturn(true);
     }
 }

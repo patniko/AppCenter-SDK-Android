@@ -89,8 +89,7 @@ public class AssetsAndroidCoreUnitTests {
 
         when(mAssetsBaseCore.getNativeConfiguration()).thenReturn(new AssetsConfiguration());
 
-        PowerMockito.mockStatic(TextUtils.class);
-        PowerMockito.when(TextUtils.isEmpty(any(CharSequence.class))).thenReturn(true);
+        mCoreTestUtils.mockTextUtils();
 
         AssetsState assetsState = new AssetsState();
         MemberModifier
@@ -158,7 +157,7 @@ public class AssetsAndroidCoreUnitTests {
         mAssetsBaseCore.sync();
 
         PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", CHECKING_FOR_UPDATE);
-        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("doDownloadAndInstall", assetsRemotePackage, any(AssetsSyncOptions.class), null);
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("doDownloadAndInstall", assetsRemotePackage, new AssetsSyncOptions(), null);
         assertFalse(assetsState.mSyncInProgress);
     }
 
@@ -203,11 +202,7 @@ public class AssetsAndroidCoreUnitTests {
         AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
         SettingsManager settingsManager = mock(SettingsManager.class);
 
-        PowerMockito.mockStatic(TextUtils.class);
-
-        // An android class TextUtils does not work correctly in unit test section.
-        // We need to mock its methods if we want different behavior.
-        when(TextUtils.isEmpty(any(String.class))).thenReturn(true);
+        mCoreTestUtils.mockTextUtils();
 
         mCoreTestUtils.mockLocalPackageIntoUpdateManager(null, assetsUpdateManager);
         when(settingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenReturn(false);
