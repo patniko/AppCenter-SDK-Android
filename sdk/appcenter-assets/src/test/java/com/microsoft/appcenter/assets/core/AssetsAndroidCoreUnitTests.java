@@ -3,18 +3,31 @@ package com.microsoft.appcenter.assets.core;
 import android.text.TextUtils;
 
 import com.microsoft.appcenter.assets.AssetsConfiguration;
+import com.microsoft.appcenter.assets.apirequests.ApiHttpRequest;
+import com.microsoft.appcenter.assets.apirequests.DownloadPackageTask;
+import com.microsoft.appcenter.assets.datacontracts.AssetsDownloadPackageResult;
 import com.microsoft.appcenter.assets.datacontracts.AssetsLocalPackage;
+import com.microsoft.appcenter.assets.datacontracts.AssetsPackage;
+import com.microsoft.appcenter.assets.datacontracts.AssetsPendingUpdate;
 import com.microsoft.appcenter.assets.datacontracts.AssetsRemotePackage;
 import com.microsoft.appcenter.assets.datacontracts.AssetsSyncOptions;
+import com.microsoft.appcenter.assets.enums.AssetsInstallMode;
 import com.microsoft.appcenter.assets.enums.AssetsUpdateState;
+import com.microsoft.appcenter.assets.exceptions.AssetsDownloadPackageException;
 import com.microsoft.appcenter.assets.exceptions.AssetsGetPackageException;
 import com.microsoft.appcenter.assets.exceptions.AssetsIllegalArgumentException;
+import com.microsoft.appcenter.assets.exceptions.AssetsInstallException;
 import com.microsoft.appcenter.assets.exceptions.AssetsMalformedDataException;
+import com.microsoft.appcenter.assets.exceptions.AssetsMergeException;
 import com.microsoft.appcenter.assets.exceptions.AssetsNativeApiCallException;
 import com.microsoft.appcenter.assets.exceptions.AssetsQueryUpdateException;
+import com.microsoft.appcenter.assets.exceptions.AssetsUnzipException;
+import com.microsoft.appcenter.assets.interfaces.AssetsPlatformUtils;
 import com.microsoft.appcenter.assets.managers.AssetsAcquisitionManager;
 import com.microsoft.appcenter.assets.managers.AssetsUpdateManager;
 import com.microsoft.appcenter.assets.managers.SettingsManager;
+import com.microsoft.appcenter.assets.utils.AssetsUtils;
+import com.microsoft.appcenter.assets.utils.FileUtils;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,6 +41,9 @@ import org.powermock.api.support.membermodification.MemberModifier;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.rule.PowerMockRule;
 
+import java.io.File;
+import java.io.IOException;
+
 import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.CHECKING_FOR_UPDATE;
 import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.SYNC_IN_PROGRESS;
 import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.UPDATE_INSTALLED;
@@ -37,7 +53,11 @@ import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -50,15 +70,36 @@ public class AssetsAndroidCoreUnitTests {
     final static boolean FAILED_INSTALL = true;
     final static boolean IS_FIRST_RUN = false;
     final static String DEPLOYMENT_KEY = "key";
+    private final static String ENTRY_POINT = "entryPoint";
+    private final static String NEW_UPDATE_FOLDER = "newUpdateFolder";
+    private final static String NEW_UPDATE_METADATA = "metadataPath";
+    final static String DOWNLOAD_URL = "url";
+    private final static boolean IS_ZIP = true;
+    private final static long BINARY_MODIFIED = 0L;
+    private final static File DOWNLOAD_FILE = new File("");
+    private AssetsUpdateManager mAssetsUpdateManager;
+    private SettingsManager mSettingsManager;
+    private AssetsConfiguration mConfiguration;
     private CoreTestUtils mCoreTestUtils;
+    private FileUtils mFileUtils;
+    private AssetsUtils mAssetsUtils;
 
     @Rule
     public PowerMockRule mPowerMockRule = new PowerMockRule();
 
     @Before
-    public void setUp() {
+    public void setUp() throws  Exception{
         mAssetsBaseCore = Mockito.mock(AssetsBaseCore.class);
         mCoreTestUtils = new CoreTestUtils(mAssetsBaseCore);
+
+        mCoreTestUtils.mockContext();
+        mCoreTestUtils.mockEntryPoint(ENTRY_POINT);
+
+        mAssetsUpdateManager = mock(AssetsUpdateManager.class);
+        mConfiguration = mock(AssetsConfiguration.class);
+        mSettingsManager = mock(SettingsManager.class);
+        mAssetsUtils = mock(AssetsUtils.class);
+        mFileUtils = mock(FileUtils.class);
     }
 
     //region sync
@@ -157,7 +198,7 @@ public class AssetsAndroidCoreUnitTests {
         mAssetsBaseCore.sync();
 
         PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", CHECKING_FOR_UPDATE);
-        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("doDownloadAndInstall", assetsRemotePackage, new AssetsSyncOptions(), null);
+        //PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("doDownloadAndInstall", assetsRemotePackage, new AssetsSyncOptions(), null);
         assertFalse(assetsState.mSyncInProgress);
     }
 
@@ -173,10 +214,9 @@ public class AssetsAndroidCoreUnitTests {
     @SuppressWarnings("unchecked")
     @Test(expected = AssetsNativeApiCallException.class)
     public void getUpdateMetadataFailsIfGetCurrentPackageFails() throws Exception {
-        AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
-        when(assetsUpdateManager.getCurrentPackage()).thenThrow(AssetsGetPackageException.class);
+        when(mAssetsUpdateManager.getCurrentPackage()).thenThrow(AssetsGetPackageException.class);
 
-        mCoreTestUtils.injectManagersInCore(assetsUpdateManager);
+        mCoreTestUtils.injectManagersInCore(mAssetsUpdateManager);
         mCoreTestUtils.callGetUpdateMetadata();
     }
 
@@ -186,10 +226,9 @@ public class AssetsAndroidCoreUnitTests {
      */
     @Test
     public void getUpdateMetadataReturnsNullIfCurrentPackageNull() throws Exception {
-        AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
-        when(assetsUpdateManager.getCurrentPackage()).thenReturn(null);
+        when(mAssetsUpdateManager.getCurrentPackage()).thenReturn(null);
 
-        mCoreTestUtils.injectManagersInCore(assetsUpdateManager);
+        mCoreTestUtils.injectManagersInCore(mAssetsUpdateManager);
         mCoreTestUtils.assertGetUpdateMetadataReturnsNull();
     }
 
@@ -199,15 +238,13 @@ public class AssetsAndroidCoreUnitTests {
      */
     @Test
     public void getUpdateMetadataReturnsNullIfRequestedPendingAndItsNull() throws Exception {
-        AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
-        SettingsManager settingsManager = mock(SettingsManager.class);
 
         mCoreTestUtils.mockTextUtils();
 
-        mCoreTestUtils.mockLocalPackageIntoUpdateManager(null, assetsUpdateManager);
-        when(settingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenReturn(false);
+        mCoreTestUtils.mockLocalPackageIntoUpdateManager(null, mAssetsUpdateManager);
+        when(mSettingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenReturn(false);
 
-        mCoreTestUtils.injectManagersInCore(assetsUpdateManager, settingsManager);
+        mCoreTestUtils.injectManagersInCore(mAssetsUpdateManager, mSettingsManager);
         mCoreTestUtils.assertGetUpdateMetadataReturnsNull(AssetsUpdateState.PENDING);
     }
 
@@ -218,14 +255,12 @@ public class AssetsAndroidCoreUnitTests {
     @SuppressWarnings("unchecked")
     @Test(expected = AssetsNativeApiCallException.class)
     public void getUpdateMetadataFailsIfSettingsManagerThrows() throws Exception {
-        AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
-        SettingsManager settingsManager = mock(SettingsManager.class);
 
-        mCoreTestUtils.mockLocalPackageIntoUpdateManager(PACKAGE_HASH, assetsUpdateManager);
+        mCoreTestUtils.mockLocalPackageIntoUpdateManager(PACKAGE_HASH, mAssetsUpdateManager);
 
-        when(settingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenThrow(AssetsMalformedDataException.class);
+        when(mSettingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenThrow(AssetsMalformedDataException.class);
 
-        mCoreTestUtils.injectManagersInCore(assetsUpdateManager, settingsManager);
+        mCoreTestUtils.injectManagersInCore(mAssetsUpdateManager, mSettingsManager);
         mCoreTestUtils.callGetUpdateMetadata();
     }
 
@@ -235,16 +270,14 @@ public class AssetsAndroidCoreUnitTests {
      */
     @Test
     public void getUpdateMetadataReturnsPreviousPackageIfCurrentUpdateIsPending() throws Exception {
-        AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
-        SettingsManager settingsManager = mock(SettingsManager.class);
 
-        mCoreTestUtils.mockLocalPackageIntoUpdateManager(PACKAGE_HASH, assetsUpdateManager);
+        mCoreTestUtils.mockLocalPackageIntoUpdateManager(PACKAGE_HASH, mAssetsUpdateManager);
 
         AssetsLocalPackage previousPackage = mock(AssetsLocalPackage.class);
-        when(assetsUpdateManager.getPreviousPackage()).thenReturn(previousPackage);
-        when(settingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenReturn(true);
+        when(mAssetsUpdateManager.getPreviousPackage()).thenReturn(previousPackage);
+        when(mSettingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenReturn(true);
 
-        mCoreTestUtils.injectManagersInCore(assetsUpdateManager, settingsManager);
+        mCoreTestUtils.injectManagersInCore(mAssetsUpdateManager, mSettingsManager);
 
         assertEquals(mCoreTestUtils.callGetUpdateMetadata(null), previousPackage);
     }
@@ -257,15 +290,13 @@ public class AssetsAndroidCoreUnitTests {
     @SuppressWarnings("unchecked")
     @Test(expected = AssetsNativeApiCallException.class)
     public void getUpdateMetadataFailsIFGetPreviousPackageFails() throws Exception {
-        AssetsUpdateManager assetsUpdateManager = mock(AssetsUpdateManager.class);
-        SettingsManager settingsManager = mock(SettingsManager.class);
 
-        mCoreTestUtils.mockLocalPackageIntoUpdateManager(PACKAGE_HASH, assetsUpdateManager);
+        mCoreTestUtils.mockLocalPackageIntoUpdateManager(PACKAGE_HASH, mAssetsUpdateManager);
 
-        when(assetsUpdateManager.getPreviousPackage()).thenThrow(AssetsGetPackageException.class);
-        when(settingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenReturn(true);
+        when(mAssetsUpdateManager.getPreviousPackage()).thenThrow(AssetsGetPackageException.class);
+        when(mSettingsManager.isPendingUpdate(eq(PACKAGE_HASH))).thenReturn(true);
 
-        mCoreTestUtils.injectManagersInCore(assetsUpdateManager, settingsManager);
+        mCoreTestUtils.injectManagersInCore(mAssetsUpdateManager, mSettingsManager);
         mCoreTestUtils.callGetUpdateMetadata(null);
     }
 
@@ -281,7 +312,7 @@ public class AssetsAndroidCoreUnitTests {
         assetsState.mIsRunningBinaryVersion = false;
         MemberModifier.field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
 
-        AssetsLocalPackage returnedPackage = mCoreTestUtils.getUpdatePackage(true);
+        AssetsLocalPackage returnedPackage = mCoreTestUtils.getAndCheckUpdatePackage(true);
         assertEquals(returnedPackage.isDebugOnly(), false);
     }
 
@@ -297,7 +328,7 @@ public class AssetsAndroidCoreUnitTests {
         assetsState.mIsRunningBinaryVersion = false;
         MemberModifier.field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
 
-        AssetsLocalPackage returnedPackage = mCoreTestUtils.getUpdatePackage(false);
+        AssetsLocalPackage returnedPackage = mCoreTestUtils.getAndCheckUpdatePackage(false);
         assertEquals(returnedPackage.isDebugOnly(), false);
     }
 
@@ -315,7 +346,7 @@ public class AssetsAndroidCoreUnitTests {
         assetsState.mIsRunningBinaryVersion = true;
         MemberModifier.field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
 
-        AssetsLocalPackage returnedPackage = mCoreTestUtils.getUpdatePackage(true);
+        AssetsLocalPackage returnedPackage = mCoreTestUtils.getAndCheckUpdatePackage(true);
         assertEquals(returnedPackage.isDebugOnly(), true);
     }
     //endregion
@@ -329,9 +360,8 @@ public class AssetsAndroidCoreUnitTests {
     @SuppressWarnings("unchecked")
     @Test(expected = AssetsNativeApiCallException.class)
     public void checkForUpdateFailsIfSetDepKeyThrows() throws Exception {
-        AssetsConfiguration configuration = mock(AssetsConfiguration.class);
-        when(configuration.setDeploymentKey(DEPLOYMENT_KEY)).thenThrow(AssetsIllegalArgumentException.class);
-        when(mAssetsBaseCore.getNativeConfiguration()).thenReturn(configuration);
+        when(mConfiguration.setDeploymentKey(DEPLOYMENT_KEY)).thenThrow(AssetsIllegalArgumentException.class);
+        when(mAssetsBaseCore.getNativeConfiguration()).thenReturn(mConfiguration);
         mCoreTestUtils.callCheckForUpdate();
     }
 
@@ -475,5 +505,271 @@ public class AssetsAndroidCoreUnitTests {
         mCoreTestUtils.callCheckForUpdate(DEPLOYMENT_KEY);
     }
 
+    //endregion
+
+    //region installUpdate
+
+    /**
+     * {@link AssetsBaseCore#installUpdate(AssetsLocalPackage, AssetsInstallMode, int)} should throw
+     * a {@link AssetsNativeApiCallException} if {@link AssetsUpdateManager#installPackage(String, boolean)}
+     * throws a {@link AssetsInstallException}.
+     */
+    @Test(expected = AssetsNativeApiCallException.class)
+    public void installFails() throws Exception {
+        doThrow(AssetsInstallException.class).when(mAssetsUpdateManager).installPackage(eq(PACKAGE_HASH), eq(true));
+
+        when(mSettingsManager.isPendingUpdate(isNull(String.class))).thenReturn(true);
+
+        mCoreTestUtils.injectManagersInCore(mAssetsUpdateManager, mSettingsManager);
+        AssetsLocalPackage assetsLocalPackage = mCoreTestUtils.mockLocalPackage(PACKAGE_HASH);
+        mCoreTestUtils.callInstallUpdate(assetsLocalPackage, AssetsInstallMode.IMMEDIATE, 0);
+    }
+
+    /**
+     * {@link AssetsBaseCore#installUpdate(AssetsLocalPackage, AssetsInstallMode, int)} should throw
+     * a {@link AssetsNativeApiCallException} if package hash equals <code>null</code>.
+     */
+    @Test(expected = AssetsNativeApiCallException.class)
+    public void installFailsPendingHashNull() throws Exception {
+        doNothing().when(mAssetsUpdateManager).installPackage(isNull(String.class), eq(true));
+
+        when(mSettingsManager.isPendingUpdate(isNull(String.class))).thenReturn(true);
+
+        mCoreTestUtils.injectManagersInCore(mAssetsUpdateManager, mSettingsManager);
+        AssetsLocalPackage assetsLocalPackage = mCoreTestUtils.mockLocalPackage(null);
+        mCoreTestUtils.callInstallUpdate(assetsLocalPackage, AssetsInstallMode.IMMEDIATE, 0);
+    }
+
+    /**
+     * {@link AssetsBaseCore#installUpdate(AssetsLocalPackage, AssetsInstallMode, int)}
+     * should be executed on {@link AssetsInstallMode#IMMEDIATE}.
+     */
+    @Test
+    public void installImmediate() throws Exception {
+        executeInstallWorkflow(AssetsInstallMode.IMMEDIATE);
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("handleInstallModesForUpdateInstall", AssetsInstallMode.IMMEDIATE);
+    }
+
+    /**
+     * {@link AssetsBaseCore#installUpdate(AssetsLocalPackage, AssetsInstallMode, int)}
+     * should be executed on {@link AssetsInstallMode#ON_NEXT_RESTART}.
+     */
+    @Test
+    public void installOnNextRestart() throws Exception {
+        executeInstallWorkflow(AssetsInstallMode.ON_NEXT_RESTART);
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(0)).invoke("handleInstallModesForUpdateInstall", AssetsInstallMode.ON_NEXT_RESTART);
+    }
+
+    /**
+     * {@link AssetsBaseCore#installUpdate(AssetsLocalPackage, AssetsInstallMode, int)}
+     * should be executed on {@link AssetsInstallMode#ON_NEXT_RESUME}.
+     */
+    @Test
+    public void installOnNextResume() throws Exception {
+        executeInstallWorkflow(AssetsInstallMode.ON_NEXT_RESUME);
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("handleInstallModesForUpdateInstall", AssetsInstallMode.ON_NEXT_RESUME);
+    }
+
+    /**
+     * {@link AssetsBaseCore#installUpdate(AssetsLocalPackage, AssetsInstallMode, int)}
+     * should be executed on {@link AssetsInstallMode#ON_NEXT_SUSPEND}.
+     */
+    @Test
+    public void installOnNextSuspend() throws Exception {
+        executeInstallWorkflow(AssetsInstallMode.ON_NEXT_SUSPEND);
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("handleInstallModesForUpdateInstall", AssetsInstallMode.ON_NEXT_SUSPEND);
+    }
+
+    /**
+     * Executes {@link AssetsBaseCore#installUpdate(AssetsLocalPackage, AssetsInstallMode, int)} workflow on
+     * different install modes.
+     *
+     * @param assetsInstallMode install mode to execute the method with.
+     */
+    private void executeInstallWorkflow(AssetsInstallMode assetsInstallMode) throws Exception {
+        doNothing().when(mAssetsUpdateManager).installPackage(isNull(String.class), eq(true));
+
+        when(mSettingsManager.isPendingUpdate(isNull(String.class))).thenReturn(true);
+        doNothing().when(mSettingsManager).savePendingUpdate(any(AssetsPendingUpdate.class));
+
+        mCoreTestUtils.injectManagersInCore(mAssetsUpdateManager, mSettingsManager);
+        AssetsLocalPackage assetsLocalPackage = mCoreTestUtils.mockLocalPackage(PACKAGE_HASH);
+        AssetsState assetsState = new AssetsState();
+        assetsState.mMinimumBackgroundDuration = 0;
+
+        MemberModifier
+                .field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
+        mCoreTestUtils.callInstallUpdate(assetsLocalPackage, assetsInstallMode, 0);
+        Mockito.verify(mSettingsManager).savePendingUpdate(any(AssetsPendingUpdate.class));
+    }
+
+    //endregion
+
+    //region downloadUpdate
+
+    /**
+     * {@link AssetsBaseCore#downloadUpdate(AssetsRemotePackage)} should download an update.
+     */
+    @Test
+    public void downloadUpdate() throws Exception {
+        AssetsPlatformUtils assetsPlatformUtils = mCoreTestUtils.mockBinaryResourcesModifiedTime(BINARY_MODIFIED);
+        AssetsRemotePackage assetsRemotePackage = mCoreTestUtils.createFakeRemotePackage();
+
+        when(mAssetsUpdateManager.getPackageDownloadFile()).thenReturn(DOWNLOAD_FILE);
+
+        mCoreTestUtils.mockCreatingRequest(DOWNLOAD_URL, DOWNLOAD_FILE);
+
+        AssetsDownloadPackageResult assetsDownloadPackageResult = mock(AssetsDownloadPackageResult.class);
+        when(assetsDownloadPackageResult.isZip()).thenReturn(IS_ZIP);
+        when(mAssetsUpdateManager.downloadPackage(eq(PACKAGE_HASH), any(ApiHttpRequest.class))).thenReturn(assetsDownloadPackageResult);
+        when(mAssetsUpdateManager.getPackageFolderPath(eq(PACKAGE_HASH))).thenReturn(NEW_UPDATE_FOLDER);
+        when(mFileUtils.appendPathComponent(any(String.class), any(String.class))).thenReturn(NEW_UPDATE_METADATA);
+        doNothing().when(mFileUtils).moveFile(eq(DOWNLOAD_FILE), any(File.class), eq(ENTRY_POINT));
+        doNothing().when(mAssetsUtils).writeObjectToJsonFile(any(AssetsLocalPackage.class), eq(NEW_UPDATE_METADATA));
+
+        mCoreTestUtils.injectUtilitiesInCore(assetsPlatformUtils, mFileUtils, mAssetsUtils);
+        mCoreTestUtils.injectManagersInCore(mAssetsUpdateManager);
+
+        AssetsLocalPackage assetsLocalPackage = mCoreTestUtils.callDownloadUpdate(assetsRemotePackage);
+
+        assertEquals(assetsLocalPackage.getBinaryModifiedTime(), "" + BINARY_MODIFIED);
+        PowerMockito.verifyNew(DownloadPackageTask.class).withArguments(mFileUtils, DOWNLOAD_URL, DOWNLOAD_FILE, null);
+        PowerMockito.verifyNew(ApiHttpRequest.class).withArguments(any(DownloadPackageTask.class));
+    }
+
+    /**
+     * {@link AssetsBaseCore#downloadUpdate(AssetsRemotePackage)} should download and unzip zip update.
+     */
+    @Test
+    public void downloadZipUpdate() throws Exception {
+        AssetsPlatformUtils assetsPlatformUtils = mCoreTestUtils.mockBinaryResourcesModifiedTime(BINARY_MODIFIED);
+        AssetsRemotePackage assetsRemotePackage = mCoreTestUtils.createFakeRemotePackage();
+
+        when(mAssetsUpdateManager.getPackageDownloadFile()).thenReturn(DOWNLOAD_FILE);
+
+        mCoreTestUtils.mockCreatingRequest(DOWNLOAD_URL, DOWNLOAD_FILE);
+
+        AssetsDownloadPackageResult assetsDownloadPackageResult = mock(AssetsDownloadPackageResult.class);
+        when(assetsDownloadPackageResult.isZip()).thenReturn(IS_ZIP);
+        when(mAssetsUpdateManager.downloadPackage(eq(PACKAGE_HASH), any(ApiHttpRequest.class))).thenReturn(assetsDownloadPackageResult);
+        when(mAssetsUpdateManager.getPackageFolderPath(eq(PACKAGE_HASH))).thenReturn(NEW_UPDATE_FOLDER);
+        when(mFileUtils.appendPathComponent(any(String.class), any(String.class))).thenReturn(NEW_UPDATE_METADATA);
+        doNothing().when(mAssetsUpdateManager).unzipPackage(eq(DOWNLOAD_FILE));
+        doReturn("").when(mAssetsUpdateManager).mergeDiff(eq(NEW_UPDATE_FOLDER), eq(NEW_UPDATE_METADATA), eq(PACKAGE_HASH), any(String.class), eq(ENTRY_POINT));
+        doNothing().when(mAssetsUtils).writeObjectToJsonFile(any(AssetsLocalPackage.class), eq(NEW_UPDATE_METADATA));
+
+        mCoreTestUtils.injectUtilitiesInCore(assetsPlatformUtils, mFileUtils, mAssetsUtils);
+        mCoreTestUtils.injectManagersInCore(mAssetsUpdateManager);
+
+        AssetsLocalPackage assetsLocalPackage = mCoreTestUtils.callDownloadUpdate(assetsRemotePackage);
+
+        assertEquals(assetsLocalPackage.getBinaryModifiedTime(), "" + BINARY_MODIFIED);
+        PowerMockito.verifyNew(DownloadPackageTask.class).withArguments(mFileUtils, DOWNLOAD_URL, DOWNLOAD_FILE, null);
+        PowerMockito.verifyNew(ApiHttpRequest.class).withArguments(any(DownloadPackageTask.class));
+        Mockito.verify(mAssetsUpdateManager).unzipPackage(eq(DOWNLOAD_FILE));
+        Mockito.verify(mAssetsUpdateManager).mergeDiff(eq(NEW_UPDATE_FOLDER), eq(NEW_UPDATE_METADATA), eq(PACKAGE_HASH), any(String.class), eq(ENTRY_POINT));
+        Mockito.verify(mAssetsUtils).writeObjectToJsonFile(any(AssetsLocalPackage.class), eq(NEW_UPDATE_METADATA));
+    }
+
+    /**
+     * {@link AssetsBaseCore#downloadUpdate(AssetsRemotePackage)} should throw a
+     * {@link AssetsNativeApiCallException} if {@link IOException} was thrown.
+     */
+    @Test(expected = AssetsNativeApiCallException.class)
+    public void downloadZipUpdateFailsIfIOException() throws Exception {
+        AssetsPlatformUtils assetsPlatformUtils = mCoreTestUtils.mockBinaryResourcesModifiedTime(BINARY_MODIFIED);
+        AssetsRemotePackage assetsRemotePackage = mCoreTestUtils.createFakeRemotePackage();
+        when(mAssetsUpdateManager.getPackageDownloadFile()).thenThrow(IOException.class);
+
+        ensureDownloadFails(mAssetsUpdateManager, assetsPlatformUtils, null, assetsRemotePackage);
+    }
+
+    /**
+     * {@link AssetsBaseCore#downloadUpdate(AssetsRemotePackage)} should throw a
+     * {@link AssetsNativeApiCallException} if {@link AssetsUpdateManager#downloadPackage(String, ApiHttpRequest)}
+     * throws {@link AssetsDownloadPackageException}.
+     */
+    @Test(expected = AssetsNativeApiCallException.class)
+    public void downloadZipUpdateFailsIfDownloadThrows() throws Exception {
+        AssetsPlatformUtils assetsPlatformUtils = mCoreTestUtils.mockBinaryResourcesModifiedTime(BINARY_MODIFIED);
+        AssetsRemotePackage assetsRemotePackage = mCoreTestUtils.createFakeRemotePackage();
+        when(mAssetsUpdateManager.getPackageDownloadFile()).thenReturn(DOWNLOAD_FILE);
+        mCoreTestUtils.mockCreatingRequest(DOWNLOAD_URL, DOWNLOAD_FILE);
+        when(mAssetsUpdateManager.downloadPackage(eq(PACKAGE_HASH), any(ApiHttpRequest.class))).thenThrow(AssetsDownloadPackageException.class);
+
+        ensureDownloadFails(mAssetsUpdateManager, assetsPlatformUtils, null, assetsRemotePackage);
+    }
+
+    /**
+     * {@link AssetsBaseCore#downloadUpdate(AssetsRemotePackage)} should throw a
+     * {@link AssetsNativeApiCallException} if {@link AssetsUpdateManager#unzipPackage(File)}
+     * throws {@link AssetsUnzipException}.
+     */
+    @Test(expected = AssetsNativeApiCallException.class)
+    public void downloadZipUpdateFailsIfUnzipThrows() throws Exception {
+        AssetsDownloadPackageResult assetsDownloadPackageResult = mock(AssetsDownloadPackageResult.class);
+
+        AssetsPlatformUtils assetsPlatformUtils = mCoreTestUtils.mockBinaryResourcesModifiedTime(BINARY_MODIFIED);
+        AssetsRemotePackage assetsRemotePackage = mCoreTestUtils.createFakeRemotePackage();
+        when(mAssetsUpdateManager.getPackageDownloadFile()).thenReturn(DOWNLOAD_FILE);
+
+        mCoreTestUtils.mockCreatingRequest(DOWNLOAD_URL, DOWNLOAD_FILE);
+
+        when(assetsDownloadPackageResult.isZip()).thenReturn(IS_ZIP);
+        when(mAssetsUpdateManager.downloadPackage(eq(PACKAGE_HASH), any(ApiHttpRequest.class))).thenReturn(assetsDownloadPackageResult);
+        when(mAssetsUpdateManager.getPackageFolderPath(eq(PACKAGE_HASH))).thenReturn(NEW_UPDATE_FOLDER);
+        when(mFileUtils.appendPathComponent(any(String.class), any(String.class))).thenReturn(NEW_UPDATE_METADATA);
+        doThrow(AssetsUnzipException.class).when(mAssetsUpdateManager).unzipPackage(eq(DOWNLOAD_FILE));
+
+        ensureDownloadFails(mAssetsUpdateManager, assetsPlatformUtils, mFileUtils, assetsRemotePackage);
+    }
+
+    /**
+     * {@link AssetsBaseCore#downloadUpdate(AssetsRemotePackage)} should throw a
+     * {@link AssetsNativeApiCallException} if {@link AssetsUpdateManager#mergeDiff(String, String, String, String, String)}
+     * throws {@link AssetsMergeException}.
+     */
+    @Test(expected = AssetsNativeApiCallException.class)
+    public void downloadZipUpdateFailsIfMergeThrows() throws Exception {
+        AssetsDownloadPackageResult assetsDownloadPackageResult = mock(AssetsDownloadPackageResult.class);
+
+        AssetsPlatformUtils assetsPlatformUtils = mCoreTestUtils.mockBinaryResourcesModifiedTime(BINARY_MODIFIED);
+        AssetsRemotePackage assetsRemotePackage = mCoreTestUtils.createFakeRemotePackage();
+        when(mAssetsUpdateManager.getPackageDownloadFile()).thenReturn(DOWNLOAD_FILE);
+
+        mCoreTestUtils.mockCreatingRequest(DOWNLOAD_URL, DOWNLOAD_FILE);
+
+        when(assetsDownloadPackageResult.isZip()).thenReturn(IS_ZIP);
+        when(mAssetsUpdateManager.downloadPackage(eq(PACKAGE_HASH), any(ApiHttpRequest.class))).thenReturn(assetsDownloadPackageResult);
+        when(mAssetsUpdateManager.getPackageFolderPath(eq(PACKAGE_HASH))).thenReturn(NEW_UPDATE_FOLDER);
+        when(mFileUtils.appendPathComponent(any(String.class), any(String.class))).thenReturn(NEW_UPDATE_METADATA);
+        doNothing().when(mAssetsUpdateManager).unzipPackage(eq(DOWNLOAD_FILE));
+        doThrow(AssetsMergeException.class).when(mAssetsUpdateManager).mergeDiff(eq(NEW_UPDATE_FOLDER), eq(NEW_UPDATE_METADATA), eq(PACKAGE_HASH), any(String.class), eq(ENTRY_POINT));
+
+        ensureDownloadFails(mAssetsUpdateManager, assetsPlatformUtils, mFileUtils, assetsRemotePackage);
+    }
+
+    /**
+     * {@link AssetsBaseCore#downloadUpdate(AssetsRemotePackage)} should rethrow a
+     * {@link AssetsNativeApiCallException} if {@link SettingsManager#saveFailedUpdate(AssetsPackage)}
+     * throws {@link AssetsMalformedDataException}.
+     */
+    @Test(expected = AssetsNativeApiCallException.class)
+    public void downloadZipUpdateFailsIfIOExceptionFailsAgain() throws Exception {
+        AssetsPlatformUtils assetsPlatformUtils = mCoreTestUtils.mockBinaryResourcesModifiedTime(BINARY_MODIFIED);
+        AssetsRemotePackage assetsRemotePackage = mCoreTestUtils.createFakeRemotePackage();
+        when(mAssetsUpdateManager.getPackageDownloadFile()).thenThrow(IOException.class);
+        doThrow(AssetsMalformedDataException.class).when(mSettingsManager).saveFailedUpdate(any(AssetsRemotePackage.class));
+
+        ensureDownloadFails(mAssetsUpdateManager, assetsPlatformUtils, null, assetsRemotePackage);
+    }
+
+    private void ensureDownloadFails(AssetsUpdateManager assetsUpdateManager, AssetsPlatformUtils assetsPlatformUtils, FileUtils mFileUtils, AssetsRemotePackage assetsRemotePackage) throws  Exception {
+        SettingsManager settingsManager = mCoreTestUtils.mockSaveFailedUpdates();
+        mCoreTestUtils.injectManagersInCore(assetsUpdateManager, settingsManager);
+        mCoreTestUtils.injectUtilitiesInCore(assetsPlatformUtils, mFileUtils, null);
+        mCoreTestUtils.callDownloadUpdate(assetsRemotePackage);
+        Mockito.verify(settingsManager).saveFailedUpdate(assetsRemotePackage);
+    }
     //endregion
 }

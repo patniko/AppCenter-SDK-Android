@@ -14,22 +14,22 @@ public class AssetsUtilities {
     /**
      * Instance of {@link AssetsUtils}.
      */
-    public final AssetsUtils mUtils;
+    public AssetsUtils mUtils;
 
     /**
      * Instance of {@link FileUtils}.
      */
-    public final FileUtils mFileUtils;
+    public FileUtils mFileUtils;
 
     /**
      * Instance of {@link AssetsUpdateUtils}.
      */
-    public final AssetsUpdateUtils mUpdateUtils;
+    public AssetsUpdateUtils mUpdateUtils;
 
     /**
      * Instance of {@link AssetsPlatformUtils}.
      */
-    public final AssetsPlatformUtils mPlatformUtils;
+    public AssetsPlatformUtils mPlatformUtils;
 
     /**
      * Create instance of AssetsUtilities.
