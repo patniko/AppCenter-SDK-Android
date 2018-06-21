@@ -764,10 +764,18 @@ public class AssetsAndroidCoreUnitTests {
         ensureDownloadFails(mAssetsUpdateManager, assetsPlatformUtils, null, assetsRemotePackage);
     }
 
-    private void ensureDownloadFails(AssetsUpdateManager assetsUpdateManager, AssetsPlatformUtils assetsPlatformUtils, FileUtils mFileUtils, AssetsRemotePackage assetsRemotePackage) throws  Exception {
+    /**
+     * Verifies that {@link AssetsBaseCore#downloadUpdate(AssetsRemotePackage)} fails to execute and calls
+     * {@link SettingsManager#saveFailedUpdate(AssetsPackage)}.
+     * @param assetsUpdateManager update manager to inject.
+     * @param assetsPlatformUtils platform utils to inject.
+     * @param fileUtils file utils to inject.
+     * @param assetsRemotePackage remote package to call with.
+     */
+    private void ensureDownloadFails(AssetsUpdateManager assetsUpdateManager, AssetsPlatformUtils assetsPlatformUtils, FileUtils fileUtils, AssetsRemotePackage assetsRemotePackage) throws  Exception {
         SettingsManager settingsManager = mCoreTestUtils.mockSaveFailedUpdates();
         mCoreTestUtils.injectManagersInCore(assetsUpdateManager, settingsManager);
-        mCoreTestUtils.injectUtilitiesInCore(assetsPlatformUtils, mFileUtils, null);
+        mCoreTestUtils.injectUtilitiesInCore(assetsPlatformUtils, fileUtils, null);
         mCoreTestUtils.callDownloadUpdate(assetsRemotePackage);
         Mockito.verify(settingsManager).saveFailedUpdate(assetsRemotePackage);
     }
