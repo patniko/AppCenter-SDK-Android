@@ -374,9 +374,6 @@ public abstract class AssetsBaseCore {
             } catch (AssetsGetPackageException e) {
                 throw new AssetsNativeApiCallException(e);
             }
-            if (previousPackage == null) {
-                return null;
-            }
             return previousPackage;
         } else {
 
@@ -456,14 +453,14 @@ public abstract class AssetsBaseCore {
         }
         AssetsRemotePackage update;
         try {
-            update = new AssetsAcquisitionManager(mUtilities.mUtils, mUtilities.mFileUtils)
-                    .queryUpdateWithCurrentPackage(config, queryPackage);
+            update = mManagers.mAcquisitionManager.queryUpdateWithCurrentPackage(config, queryPackage);
         } catch (AssetsQueryUpdateException e) {
             throw new AssetsNativeApiCallException(e);
         }
-        if (update == null || update.isUpdateAppVersion() ||
-                localPackage != null && (update.getPackageHash().equals(localPackage.getPackageHash())) ||
-                (localPackage == null || localPackage.isDebugOnly()) && config.getPackageHash().equals(update.getPackageHash())) {
+        boolean updateIsTheSameAsLocal = update != null && (localPackage != null && (update.getPackageHash().equals(localPackage.getPackageHash())));
+        boolean localNotExist = (localPackage == null || localPackage.isDebugOnly());
+        boolean localPackageIsNullAndUpdateEqualsToConfig = update != null && localNotExist && config.getPackageHash().equals(update.getPackageHash());
+        if (update == null || update.isUpdateAppVersion() || updateIsTheSameAsLocal || localPackageIsNullAndUpdateEqualsToConfig) {
             if (update != null && update.isUpdateAppVersion()) {
                 AppCenterLog.info(LOG_TAG, "An update is available but it is not targeting the binary version of your app.");
                 notifyAboutBinaryVersionMismatchChange(update);

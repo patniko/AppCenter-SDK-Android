@@ -5,7 +5,7 @@ import com.microsoft.appcenter.assets.exceptions.AssetsIllegalArgumentException;
 /**
  * Provides info regarding current app state and settings.
  */
-public final class AssetsConfiguration {
+public class AssetsConfiguration {
 
     /**
      * Value of <code>versionName</code> parameter from <code>build.gradle</code>.
