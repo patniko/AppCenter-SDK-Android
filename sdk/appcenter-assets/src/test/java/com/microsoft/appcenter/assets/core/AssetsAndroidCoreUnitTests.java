@@ -12,6 +12,7 @@ import com.microsoft.appcenter.assets.datacontracts.AssetsPendingUpdate;
 import com.microsoft.appcenter.assets.datacontracts.AssetsRemotePackage;
 import com.microsoft.appcenter.assets.datacontracts.AssetsSyncOptions;
 import com.microsoft.appcenter.assets.enums.AssetsInstallMode;
+import com.microsoft.appcenter.assets.enums.AssetsSyncStatus;
 import com.microsoft.appcenter.assets.enums.AssetsUpdateState;
 import com.microsoft.appcenter.assets.exceptions.AssetsDownloadPackageException;
 import com.microsoft.appcenter.assets.exceptions.AssetsGetPackageException;
@@ -28,6 +29,7 @@ import com.microsoft.appcenter.assets.managers.AssetsUpdateManager;
 import com.microsoft.appcenter.assets.managers.SettingsManager;
 import com.microsoft.appcenter.assets.utils.AssetsUtils;
 import com.microsoft.appcenter.assets.utils.FileUtils;
+import com.microsoft.appcenter.utils.AppCenterLog;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,7 +38,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
-import org.powermock.api.support.membermodification.MemberMatcher;
 import org.powermock.api.support.membermodification.MemberModifier;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.rule.PowerMockRule;
@@ -46,15 +47,16 @@ import java.io.IOException;
 
 import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.CHECKING_FOR_UPDATE;
 import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.SYNC_IN_PROGRESS;
+import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.UNKNOWN_ERROR;
 import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.UPDATE_INSTALLED;
 import static com.microsoft.appcenter.assets.enums.AssetsSyncStatus.UP_TO_DATE;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNull;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isNull;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -63,7 +65,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 //@RunWith(PowerMockRunner.class)
-@PrepareForTest({AssetsBaseCore.class, TextUtils.class})
+@PrepareForTest({AssetsBaseCore.class, TextUtils.class, AppCenterLog.class})
 public class AssetsAndroidCoreUnitTests {
     private AssetsBaseCore mAssetsBaseCore;
     final static String PACKAGE_HASH = "hash";
@@ -83,6 +85,7 @@ public class AssetsAndroidCoreUnitTests {
     private CoreTestUtils mCoreTestUtils;
     private FileUtils mFileUtils;
     private AssetsUtils mAssetsUtils;
+    private AssetsState mAssetsState;
 
     @Rule
     public PowerMockRule mPowerMockRule = new PowerMockRule();
@@ -93,7 +96,9 @@ public class AssetsAndroidCoreUnitTests {
         mCoreTestUtils = new CoreTestUtils(mAssetsBaseCore);
 
         mCoreTestUtils.mockContext();
+        mAssetsState = mCoreTestUtils.mockState(false, false);
         mCoreTestUtils.mockEntryPoint(ENTRY_POINT);
+        mCoreTestUtils.mockDoDownloadAndInstall();
 
         mAssetsUpdateManager = mock(AssetsUpdateManager.class);
         mConfiguration = mock(AssetsConfiguration.class);
@@ -104,102 +109,213 @@ public class AssetsAndroidCoreUnitTests {
 
     //region sync
 
+    /**
+     * {@link AssetsBaseCore#sync()} should call {@link AssetsSyncStatus#SYNC_IN_PROGRESS},
+     * if {@link AssetsState#mSyncInProgress} already equals <code>true</code>.
+     */
     @Test
     public void syncInProgressTest() throws Exception {
-        AssetsState assetsState = new AssetsState();
-        assetsState.mSyncInProgress = true;
+        mAssetsState = mCoreTestUtils.mockState(false, true);
+        mCoreTestUtils.callSync();
 
-        MemberModifier
-                .field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
-
-        doCallRealMethod().when(mAssetsBaseCore).sync();
-        doCallRealMethod().when(mAssetsBaseCore).sync(any(AssetsSyncOptions.class));
-        mAssetsBaseCore.sync();
-
-        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", SYNC_IN_PROGRESS);
+        mCoreTestUtils.verifyNotifySyncStatusCalled(SYNC_IN_PROGRESS);
         PowerMockito.verifyPrivate(mAssetsBaseCore, times(0)).invoke("getNativeConfiguration");
     }
 
+    /**
+     * {@link AssetsBaseCore#sync()} should throws a {@link AssetsNativeApiCallException}
+     * if an attempt to set <code>null</code> deploymentKey was made.
+     */
     @Test(expected = AssetsNativeApiCallException.class)
     public void syncOptionsNotDefinedTest() throws Exception {
-        AssetsSyncOptions assetsSyncOptions = mock(AssetsSyncOptions.class);
-        when(assetsSyncOptions.getDeploymentKey()).thenReturn(null, "fake-deployment-key", null);
-        when(assetsSyncOptions.getCheckFrequency()).thenReturn(null);
-        when(assetsSyncOptions.getInstallMode()).thenReturn(null);
-        when(assetsSyncOptions.getMandatoryInstallMode()).thenReturn(null);
+        AssetsSyncOptions assetsSyncOptions = mCoreTestUtils.mockSyncOptions(null, false);
+        when(assetsSyncOptions.getDeploymentKey()).thenReturn(null, DEPLOYMENT_KEY, null);
 
         when(mAssetsBaseCore.getNativeConfiguration()).thenReturn(new AssetsConfiguration());
 
         mCoreTestUtils.mockTextUtils();
 
-        AssetsState assetsState = new AssetsState();
-        MemberModifier
-                .field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
-
-        doCallRealMethod().when(mAssetsBaseCore).sync(assetsSyncOptions);
-        mAssetsBaseCore.sync(assetsSyncOptions);
+        mCoreTestUtils.callSync(assetsSyncOptions);
     }
 
+    /**
+     * {@link AssetsBaseCore#sync()} should call {@link AssetsSyncStatus#CHECKING_FOR_UPDATE},
+     * then {@link AssetsSyncStatus#UP_TO_DATE} if {@link AssetsRemotePackage} equals <code>null</code>
+     * and {@link AssetsLocalPackage} equals <code>null</code>.
+     */
     @Test
     public void syncUpToDateTest() throws Exception {
-        AssetsState assetsState = new AssetsState();
-        MemberModifier
-                .field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
-
         when(mAssetsBaseCore.checkForUpdate()).thenReturn(null);
         when(mAssetsBaseCore.getCurrentPackage()).thenReturn(null);
 
-        doCallRealMethod().when(mAssetsBaseCore).sync();
-        doCallRealMethod().when(mAssetsBaseCore).sync(any(AssetsSyncOptions.class));
-        mAssetsBaseCore.sync();
+        mCoreTestUtils.callSync();
 
-        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", CHECKING_FOR_UPDATE);
-        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", UP_TO_DATE);
-        assertFalse(assetsState.mSyncInProgress);
+        mCoreTestUtils.verifyNotifySyncStatusCalled(CHECKING_FOR_UPDATE);
+        mCoreTestUtils.verifyNotifySyncStatusCalled(UP_TO_DATE);
+        assertFalse(mAssetsState.mSyncInProgress);
     }
 
+    /**
+     * {@link AssetsBaseCore#sync()} should call {@link AssetsSyncStatus#CHECKING_FOR_UPDATE},
+     * then {@link AssetsSyncStatus#UP_TO_DATE} if {@link AssetsRemotePackage} equals <code>null</code>
+     * and {@link AssetsLocalPackage#isPending} equals <code>false</code>.
+     */
+    @Test
+    public void syncUpToDateTest2() throws Exception {
+        when(mAssetsBaseCore.checkForUpdate()).thenReturn(null);
+        AssetsLocalPackage assetsLocalPackage = mock(AssetsLocalPackage.class);
+        when(assetsLocalPackage.isPending()).thenReturn(false);
+        when(mAssetsBaseCore.getCurrentPackage()).thenReturn(assetsLocalPackage);
+
+        mCoreTestUtils.callSync();
+
+        mCoreTestUtils.verifyNotifySyncStatusCalled(CHECKING_FOR_UPDATE);
+        mCoreTestUtils.verifyNotifySyncStatusCalled(UP_TO_DATE);
+        assertFalse(mAssetsState.mSyncInProgress);
+    }
+
+
+    /**
+     * {@link AssetsBaseCore#sync()} should call {@link AssetsSyncStatus#CHECKING_FOR_UPDATE},
+     * then {@link AssetsSyncStatus#UNKNOWN_ERROR} in case of any error.
+     */
+    @Test(expected = AssetsNativeApiCallException.class)
+    public void syncCheckForUpdateFails() throws Exception {
+        when(mAssetsBaseCore.checkForUpdate(anyString())).thenThrow(AssetsNativeApiCallException.class);
+        AssetsLocalPackage assetsLocalPackage = mock(AssetsLocalPackage.class);
+        when(assetsLocalPackage.isPending()).thenReturn(false);
+        when(mAssetsBaseCore.getCurrentPackage()).thenReturn(assetsLocalPackage);
+
+        mCoreTestUtils.callSync();
+
+        mCoreTestUtils.verifyNotifySyncStatusCalled(CHECKING_FOR_UPDATE);
+        mCoreTestUtils.verifyNotifySyncStatusCalled(UNKNOWN_ERROR);
+        assertFalse(mAssetsState.mSyncInProgress);
+    }
+
+    /**
+     * {@link AssetsBaseCore#sync()} should call {@link AssetsSyncStatus#CHECKING_FOR_UPDATE},
+     * then {@link AssetsSyncStatus#UPDATE_INSTALLED}.
+     */
     @Test
     public void syncUpdateInstalledTest() throws Exception {
-        AssetsState assetsState = new AssetsState();
-        MemberModifier
-                .field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
-
         when(mAssetsBaseCore.checkForUpdate()).thenReturn(null);
 
         AssetsLocalPackage assetsLocalPackage = mock(AssetsLocalPackage.class);
         when(assetsLocalPackage.isPending()).thenReturn(true);
         when(mAssetsBaseCore.getCurrentPackage()).thenReturn(assetsLocalPackage);
-
-        doCallRealMethod().when(mAssetsBaseCore).sync();
-        doCallRealMethod().when(mAssetsBaseCore).sync(any(AssetsSyncOptions.class));
-        mAssetsBaseCore.sync();
-
-        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", CHECKING_FOR_UPDATE);
-        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", UPDATE_INSTALLED);
-        assertFalse(assetsState.mSyncInProgress);
+        mCoreTestUtils.callSync();
+        mCoreTestUtils.verifyNotifySyncStatusCalled(CHECKING_FOR_UPDATE);
+        mCoreTestUtils.verifyNotifySyncStatusCalled(UPDATE_INSTALLED);
+        assertFalse(mAssetsState.mSyncInProgress);
     }
 
+    /**
+     * {@link AssetsBaseCore#sync()} should ignore failed updates if {@link AssetsRemotePackage#failedInstall}
+     * equals <code>true</code> and {@link AssetsSyncOptions#ignoreFailedUpdates} equals <code>true</code>.
+     */
+    @Test
+    public void syncIgnoreFailedUpdates() throws Exception {
+        mCoreTestUtils.mockConfiguration(PACKAGE_HASH);
+        AssetsRemotePackage assetsRemotePackage = mock(AssetsRemotePackage.class);
+        when(assetsRemotePackage.isFailedInstall()).thenReturn(true);
+
+        when(mAssetsBaseCore.checkForUpdate(eq(DEPLOYMENT_KEY))).thenReturn(assetsRemotePackage);
+
+        AssetsLocalPackage assetsLocalPackage = mock(AssetsLocalPackage.class);
+        when(assetsLocalPackage.isPending()).thenReturn(true);
+        when(mAssetsBaseCore.getCurrentPackage()).thenReturn(assetsLocalPackage);
+
+        AssetsSyncOptions assetsSyncOptions = mCoreTestUtils.mockSyncOptions(DEPLOYMENT_KEY,true);
+
+        mCoreTestUtils.callSync(assetsSyncOptions);
+
+        mCoreTestUtils.verifyNotifySyncStatusCalled(CHECKING_FOR_UPDATE);
+        mCoreTestUtils.verifyNotifySyncStatusCalled(UPDATE_INSTALLED);
+        assertFalse(mAssetsState.mSyncInProgress);
+    }
+
+    /**
+     * {@link AssetsBaseCore#sync()} should not ignore failed updates if {@link AssetsRemotePackage#failedInstall}
+     * equals <code>false</code>.
+     */
+    @Test
+    public void syncNotIgnoreFailedUpdatesNoFailedInstalls() throws Exception {
+        mCoreTestUtils.mockConfiguration(PACKAGE_HASH);
+        AssetsRemotePackage assetsRemotePackage = mock(AssetsRemotePackage.class);
+        when(assetsRemotePackage.isFailedInstall()).thenReturn(false);
+
+        when(mAssetsBaseCore.checkForUpdate(eq(DEPLOYMENT_KEY))).thenReturn(assetsRemotePackage);
+
+        AssetsLocalPackage assetsLocalPackage = mock(AssetsLocalPackage.class);
+        when(assetsLocalPackage.isPending()).thenReturn(true);
+        when(mAssetsBaseCore.getCurrentPackage()).thenReturn(assetsLocalPackage);
+
+        AssetsSyncOptions assetsSyncOptions = mCoreTestUtils.mockSyncOptions(DEPLOYMENT_KEY,true);
+
+        mCoreTestUtils.callSync(assetsSyncOptions);
+
+        mCoreTestUtils.verifyNotifySyncStatusCalled(CHECKING_FOR_UPDATE);
+        assertFalse(mAssetsState.mSyncInProgress);
+    }
+
+    /**
+     * {@link AssetsBaseCore#sync()} should not ignore failed updates if {@link AssetsRemotePackage#failedInstall}
+     * equals <code>true</code> and {@link AssetsSyncOptions#ignoreFailedUpdates} equals <code>false</code>.
+     */
+    @Test
+    public void syncNotIgnoreFailedUpdates() throws Exception {
+        mCoreTestUtils.mockConfiguration(PACKAGE_HASH);
+        AssetsRemotePackage assetsRemotePackage = mock(AssetsRemotePackage.class);
+        when(assetsRemotePackage.isFailedInstall()).thenReturn(true);
+        when(mAssetsBaseCore.checkForUpdate(anyString())).thenReturn(assetsRemotePackage);
+
+        AssetsLocalPackage assetsLocalPackage = mock(AssetsLocalPackage.class);
+        when(assetsLocalPackage.isPending()).thenReturn(true);
+        when(mAssetsBaseCore.getCurrentPackage()).thenReturn(assetsLocalPackage);
+
+        AssetsSyncOptions assetsSyncOptions = mCoreTestUtils.mockSyncOptions(DEPLOYMENT_KEY,false);
+
+        mCoreTestUtils.callSync(assetsSyncOptions);
+        mCoreTestUtils.verifyNotifySyncStatusCalled(CHECKING_FOR_UPDATE);
+        assertFalse(mAssetsState.mSyncInProgress);
+    }
+
+    /**
+     * {@link AssetsBaseCore#sync()} should call {@link AssetsBaseCore#doDownloadAndInstall(AssetsRemotePackage, AssetsSyncOptions, AssetsConfiguration)}
+     * if {@link AssetsSyncOptions#updateDialog} equals <code>null</code>.
+     */
     @Test
     public void syncDoDownloadAndInstallTest() throws Exception {
-        AssetsState assetsState = new AssetsState();
-        MemberModifier
-                .field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
-
         AssetsRemotePackage assetsRemotePackage = new AssetsRemotePackage();
         when(mAssetsBaseCore.checkForUpdate(any(String.class))).thenReturn(assetsRemotePackage);
-
-        MemberModifier
-                .stub(MemberMatcher.method(AssetsBaseCore.class,
-                        "doDownloadAndInstall"))
-                .toReturn(null);
-
-        doCallRealMethod().when(mAssetsBaseCore).sync();
-        doCallRealMethod().when(mAssetsBaseCore).sync(any(AssetsSyncOptions.class));
-        mAssetsBaseCore.sync();
+        mCoreTestUtils.callSync();
 
         PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", CHECKING_FOR_UPDATE);
-        //PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("doDownloadAndInstall", assetsRemotePackage, new AssetsSyncOptions(), null);
-        assertFalse(assetsState.mSyncInProgress);
+        assertFalse(mAssetsState.mSyncInProgress);
+    }
+
+    /**
+     * {@link AssetsBaseCore#sync()} should create new {@link AssetsSyncOptions} if passed parameter
+     * equals <code>null</code>.
+     */
+    @Test
+    public void syncNullSyncOptions() throws Exception {
+        MemberModifier.field(AssetsBaseCore.class, "mDeploymentKey").set(mAssetsBaseCore, DEPLOYMENT_KEY);
+
+        AssetsRemotePackage assetsRemotePackage = new AssetsRemotePackage();
+        when(mAssetsBaseCore.checkForUpdate(eq(DEPLOYMENT_KEY))).thenReturn(assetsRemotePackage);
+
+        mCoreTestUtils.mockConfiguration(PACKAGE_HASH);
+
+        mCoreTestUtils.mockTextUtils();
+
+        AssetsSyncOptions assetsSyncOptions = mCoreTestUtils.mockSyncOptions(DEPLOYMENT_KEY,false);
+
+        PowerMockito.whenNew(AssetsSyncOptions.class).withArguments(DEPLOYMENT_KEY).thenReturn(assetsSyncOptions);
+        mCoreTestUtils.callSync(null);
+
+        PowerMockito.verifyNew(AssetsSyncOptions.class).withArguments(DEPLOYMENT_KEY);
     }
 
     //endregion sync
@@ -308,10 +424,6 @@ public class AssetsAndroidCoreUnitTests {
     public void getUpdateMetadataReturnsPendingIfRequested() throws Exception {
         mCoreTestUtils.prepareGetUpdateWorkflow(true);
 
-        AssetsState assetsState = new AssetsState();
-        assetsState.mIsRunningBinaryVersion = false;
-        MemberModifier.field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
-
         AssetsLocalPackage returnedPackage = mCoreTestUtils.getAndCheckUpdatePackage(true);
         assertEquals(returnedPackage.isDebugOnly(), false);
     }
@@ -323,10 +435,6 @@ public class AssetsAndroidCoreUnitTests {
     @Test
     public void getUpdateMetadataReturnsRunningIfRequested() throws Exception {
         mCoreTestUtils.prepareGetUpdateWorkflow(false);
-
-        AssetsState assetsState = new AssetsState();
-        assetsState.mIsRunningBinaryVersion = false;
-        MemberModifier.field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
 
         AssetsLocalPackage returnedPackage = mCoreTestUtils.getAndCheckUpdatePackage(false);
         assertEquals(returnedPackage.isDebugOnly(), false);
@@ -342,10 +450,7 @@ public class AssetsAndroidCoreUnitTests {
     public void getUpdateMetadataReturnsPendingIfRequestedRunningBinaryVersion() throws Exception {
         mCoreTestUtils.prepareGetUpdateWorkflow(true);
 
-        AssetsState assetsState = new AssetsState();
-        assetsState.mIsRunningBinaryVersion = true;
-        MemberModifier.field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
-
+        mAssetsState = mCoreTestUtils.mockState(true, true);
         AssetsLocalPackage returnedPackage = mCoreTestUtils.getAndCheckUpdatePackage(true);
         assertEquals(returnedPackage.isDebugOnly(), true);
     }
