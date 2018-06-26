@@ -18,7 +18,7 @@ import javax.net.ssl.HttpsURLConnection;
 import static com.microsoft.appcenter.assets.Assets.LOG_TAG;
 
 /**
- * Performs sending status reports to server.
+ * Performs checking for update.
  */
 public class CheckForUpdateTask extends BaseHttpTask<AssetsUpdateResponse> {
 
