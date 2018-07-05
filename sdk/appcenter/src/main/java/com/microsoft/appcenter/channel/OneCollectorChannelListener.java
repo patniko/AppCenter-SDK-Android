@@ -38,7 +38,7 @@ public class OneCollectorChannelListener extends AbstractChannelListener {
      * Maximum number of requests being sent for the group.
      */
     @VisibleForTesting
-    static final int ONE_COLLECTOR_TRIGGER_MAX_PARALLEL_REQUESTS = 3;
+    static final int ONE_COLLECTOR_TRIGGER_MAX_PARALLEL_REQUESTS = 2;
 
     /**
      * Postfix for One Collector's groups.
@@ -117,7 +117,7 @@ public class OneCollectorChannelListener extends AbstractChannelListener {
         for (CommonSchemaLog commonSchemaLog : commonSchemaLogs) {
             EpochAndSeq epochAndSeq = mEpochsAndSeqsByIKey.get(commonSchemaLog.getIKey());
             if (epochAndSeq == null) {
-                epochAndSeq = new EpochAndSeq(UUIDUtils.randomUUID().toString(), 0L);
+                epochAndSeq = new EpochAndSeq(UUIDUtils.randomUUID().toString());
                 mEpochsAndSeqsByIKey.put(commonSchemaLog.getIKey(), epochAndSeq);
             }
             SdkExtension sdk = commonSchemaLog.getExt().getSdk();
@@ -194,7 +194,7 @@ public class OneCollectorChannelListener extends AbstractChannelListener {
         /**
          * Epoch.
          */
-        String epoch;
+        final String epoch;
 
         /**
          * Sequence number.
@@ -204,9 +204,8 @@ public class OneCollectorChannelListener extends AbstractChannelListener {
         /**
          * Init.
          */
-        EpochAndSeq(String epoch, long seq) {
+        EpochAndSeq(String epoch) {
             this.epoch = epoch;
-            this.seq = seq;
         }
     }
 }
