@@ -7,7 +7,12 @@ import java.util.Map;
 public class PageActivity extends LogActivity {
 
     @Override
-    protected void trackLog(String name, Map<String, String> properties) {
+    int getLayoutId() {
+        return R.layout.activity_page;
+    }
+
+    @Override
+    void trackLog(String name, Map<String, String> properties) {
         AnalyticsPrivateHelper.trackPage(name, properties);
     }
 }
