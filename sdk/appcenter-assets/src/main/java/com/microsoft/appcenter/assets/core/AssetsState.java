@@ -19,7 +19,7 @@ public class AssetsState {
     public boolean mNeedToReportRollback;
 
     /**
-     * Indicates whether current install mode.
+     * Indicates current install mode.
      */
     public AssetsInstallMode mCurrentInstallModeInProgress;
 

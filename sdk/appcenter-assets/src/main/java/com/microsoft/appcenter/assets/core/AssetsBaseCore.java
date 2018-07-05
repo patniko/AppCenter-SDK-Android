@@ -39,11 +39,11 @@ import com.microsoft.appcenter.assets.exceptions.AssetsQueryUpdateException;
 import com.microsoft.appcenter.assets.exceptions.AssetsReportStatusException;
 import com.microsoft.appcenter.assets.exceptions.AssetsRollbackException;
 import com.microsoft.appcenter.assets.exceptions.AssetsUnzipException;
-import com.microsoft.appcenter.assets.interfaces.AssetsEntryPointProvider;
 import com.microsoft.appcenter.assets.interfaces.AssetsBinaryVersionMismatchListener;
 import com.microsoft.appcenter.assets.interfaces.AssetsConfirmationCallback;
 import com.microsoft.appcenter.assets.interfaces.AssetsConfirmationDialog;
 import com.microsoft.appcenter.assets.interfaces.AssetsDownloadProgressListener;
+import com.microsoft.appcenter.assets.interfaces.AssetsEntryPointProvider;
 import com.microsoft.appcenter.assets.interfaces.AssetsPlatformUtils;
 import com.microsoft.appcenter.assets.interfaces.AssetsPublicKeyProvider;
 import com.microsoft.appcenter.assets.interfaces.AssetsRestartHandler;
@@ -176,13 +176,13 @@ public abstract class AssetsBaseCore {
      * We pass {@link Application} and app secret here, too, because we can't initialize AppCenter in another constructor and then call this.
      * However, AppCenter must be initialized before creating anything else.
      *
-     * @param deploymentKey         deployment key.
-     * @param context               application context.
-     * @param isDebugMode           indicates whether application is running in debug mode.
-     * @param serverUrl             CodePush server url.
-     * @param publicKeyProvider     instance of {@link AssetsPublicKeyProvider}.
+     * @param deploymentKey      deployment key.
+     * @param context            application context.
+     * @param isDebugMode        indicates whether application is running in debug mode.
+     * @param serverUrl          CodePush server url.
+     * @param publicKeyProvider  instance of {@link AssetsPublicKeyProvider}.
      * @param entryPointProvider instance of {@link AssetsEntryPointProvider}.
-     * @param platformUtils         instance of {@link AssetsPlatformUtils}.
+     * @param platformUtils      instance of {@link AssetsPlatformUtils}.
      * @throws AssetsInitializeException error occurred during the initialization.
      */
     protected AssetsBaseCore(
@@ -229,10 +229,10 @@ public abstract class AssetsBaseCore {
         });
         AssetsAcquisitionManager acquisitionManager = new AssetsAcquisitionManager(utils, fileUtils);
         mManagers = new AssetsManagers(updateManager, telemetryManager, settingsManager, restartManager, acquisitionManager);
-        
+
         /* Initializes listeners */
         mListeners = new AssetsListeners();
-        
+
         /* Initialize state */
         mState = new AssetsState();
         try {
@@ -633,7 +633,7 @@ public abstract class AssetsBaseCore {
     /**
      * Performs just the restart itself.
      *
-     * @param onlyIfUpdateIsPending   restart only if update is pending or unconditionally.
+     * @param onlyIfUpdateIsPending restart only if update is pending or unconditionally.
      * @param assetsRestartListener listener to notify that the application has restarted.
      * @return <code>true</code> if restarted successfully.
      * @throws AssetsMalformedDataException error thrown when actual data is broken (i .e. different from the expected).
@@ -641,7 +641,7 @@ public abstract class AssetsBaseCore {
     public boolean restartInternal(AssetsRestartListener assetsRestartListener, boolean onlyIfUpdateIsPending) throws AssetsMalformedDataException {
 
         /* If this is an unconditional restart request, or there
-        * is current pending update, then reload the app. */
+         * is current pending update, then reload the app. */
         if (!onlyIfUpdateIsPending || mManagers.mSettingsManager.isPendingUpdate(null)) {
             loadApp(assetsRestartListener);
             return true;
@@ -754,15 +754,24 @@ public abstract class AssetsBaseCore {
                 AppCenterLog.info(LOG_TAG, "User cancelled the update.");
                 break;
             }
+            case SYNC_IN_PROGRESS: {
+                AppCenterLog.info(LOG_TAG, "Sync is in progress.");
+                break;
+            }
             case UPDATE_INSTALLED: {
-                if (mState.mCurrentInstallModeInProgress == ON_NEXT_RESTART) {
-                    AppCenterLog.info(LOG_TAG, "Update is installed and will be run on the next app restart.");
-                } else if (mState.mCurrentInstallModeInProgress == ON_NEXT_SUSPEND) {
-                    AppCenterLog.info(LOG_TAG, "Update is installed and will be run after the app has been in the background for at least " + mState.mMinimumBackgroundDuration + " seconds.");
-                } else if (mState.mCurrentInstallModeInProgress == IMMEDIATE) {
-                    AppCenterLog.info(LOG_TAG, "Update is installed and will be run right now.");
-                } else if (mState.mCurrentInstallModeInProgress == ON_NEXT_RESUME) {
-                    AppCenterLog.info(LOG_TAG, "Update is installed and will be run when the app next resumes.");
+                switch(mState.mCurrentInstallModeInProgress) {
+                    case ON_NEXT_RESTART:
+                        AppCenterLog.info(LOG_TAG, "Update is installed and will be run on the next app restart.");
+                        break;
+                    case ON_NEXT_SUSPEND:
+                        AppCenterLog.info(LOG_TAG, "Update is installed and will be run after the app has been in the background for at least " + mState.mMinimumBackgroundDuration + " seconds.");
+                        break;
+                    case IMMEDIATE:
+                        AppCenterLog.info(LOG_TAG, "Update is installed and will be run right now.");
+                        break;
+                    case ON_NEXT_RESUME:
+                        AppCenterLog.info(LOG_TAG, "Update is installed and will be run when the app next resumes.");
+                        break;
                 }
                 break;
             }
@@ -938,15 +947,15 @@ public abstract class AssetsBaseCore {
      */
     @SuppressWarnings("WeakerAccess")
     public void installUpdate(final AssetsLocalPackage updatePackage, final AssetsInstallMode installMode, final int minimumBackgroundDuration) throws AssetsNativeApiCallException {
-        try {
-            mManagers.mUpdateManager.installPackage(updatePackage.getPackageHash(), mManagers.mSettingsManager.isPendingUpdate(null));
-        } catch (AssetsInstallException | AssetsMalformedDataException e) {
-            throw new AssetsNativeApiCallException(e);
-        }
         String pendingHash = updatePackage.getPackageHash();
         if (pendingHash == null) {
             throw new AssetsNativeApiCallException("Update package to be installed has no hash.");
         } else {
+            try {
+                mManagers.mUpdateManager.installPackage(updatePackage.getPackageHash(), mManagers.mSettingsManager.isPendingUpdate(null));
+            } catch (AssetsInstallException | AssetsMalformedDataException e) {
+                throw new AssetsNativeApiCallException(e);
+            }
             AssetsPendingUpdate pendingUpdate = new AssetsPendingUpdate();
             pendingUpdate.setPendingUpdateHash(pendingHash);
             pendingUpdate.setPendingUpdateIsLoading(false);
@@ -1166,6 +1175,7 @@ public abstract class AssetsBaseCore {
 
     /**
      * Gets current package update entry point.
+     *
      * @return path to update contents.
      */
     public String getCurrentUpdateEntryPoint() throws AssetsGetPackageException, IOException {
