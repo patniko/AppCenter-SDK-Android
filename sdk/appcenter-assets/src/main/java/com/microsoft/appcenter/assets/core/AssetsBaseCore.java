@@ -1,6 +1,5 @@
 package com.microsoft.appcenter.assets.core;
 
-import android.app.Application;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -173,8 +172,6 @@ public abstract class AssetsBaseCore {
 
     /**
      * Creates instance of {@link AssetsBaseCore}. Default constructor.
-     * We pass {@link Application} and app secret here, too, because we can't initialize AppCenter in another constructor and then call this.
-     * However, AppCenter must be initialized before creating anything else.
      *
      * @param deploymentKey      deployment key.
      * @param context            application context.
