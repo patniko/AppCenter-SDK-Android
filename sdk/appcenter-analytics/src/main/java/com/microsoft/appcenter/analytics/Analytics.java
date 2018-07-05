@@ -24,7 +24,6 @@ import com.microsoft.appcenter.ingestion.models.json.LogFactory;
 import com.microsoft.appcenter.utils.AppCenterLog;
 import com.microsoft.appcenter.utils.UUIDUtils;
 import com.microsoft.appcenter.utils.async.AppCenterFuture;
-import com.microsoft.appcenter.utils.async.DefaultAppCenterFuture;
 
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
@@ -79,11 +78,6 @@ public class Analytics extends AbstractAppCenterService {
      * Current activity to replay onResume when enabled in foreground.
      */
     private WeakReference<Activity> mCurrentActivity;
-
-    /**
-     * True if started from app, false if started only from a library or not yet started at all.
-     */
-    private boolean mStartedFromApp;
 
     /**
      * Session tracker.
@@ -321,7 +315,7 @@ public class Analytics extends AbstractAppCenterService {
                 AppCenterLog.debug(LOG_TAG, "Returning transmission target found with token " + transmissionTargetToken);
                 return transmissionTarget;
             }
-            transmissionTarget = new AnalyticsTransmissionTarget(transmissionTargetToken, null);
+            transmissionTarget = new AnalyticsTransmissionTarget(transmissionTargetToken);
             AppCenterLog.debug(LOG_TAG, "Created transmission target with token " + transmissionTargetToken);
             mTransmissionTargets.put(transmissionTargetToken, transmissionTarget);
             return transmissionTarget;
@@ -379,11 +373,9 @@ public class Analytics extends AbstractAppCenterService {
      * @param activity current activity.
      */
     private void processOnResume(Activity activity) {
-        if (mSessionTracker != null) {
-            mSessionTracker.onActivityResumed();
-            if (mAutoPageTrackingEnabled) {
-                queuePage(generatePageName(activity.getClass()), null);
-            }
+        mSessionTracker.onActivityResumed();
+        if (mAutoPageTrackingEnabled) {
+            queuePage(generatePageName(activity.getClass()), null);
         }
     }
 
@@ -401,9 +393,7 @@ public class Analytics extends AbstractAppCenterService {
             @Override
             public void run() {
                 updateCurrentActivityRunnable.run();
-                if (mSessionTracker != null) {
-                    mSessionTracker.onActivityPaused();
-                }
+                mSessionTracker.onActivityPaused();
             }
         }, updateCurrentActivityRunnable, updateCurrentActivityRunnable);
     }
@@ -442,38 +432,7 @@ public class Analytics extends AbstractAppCenterService {
      */
     @Override
     protected synchronized void applyEnabledState(boolean enabled) {
-
-        /* If we enabled the service. */
         if (enabled) {
-
-            /* Check if service started at application level and enable corresponding features. */
-            startAppLevelFeatures();
-        }
-
-        /* On disabling service. */
-        else {
-
-            /* Cleanup resources. */
-            if (mAnalyticsValidator != null) {
-                mChannel.removeListener(mAnalyticsValidator);
-                mAnalyticsValidator = null;
-            }
-            if (mSessionTracker != null) {
-                mChannel.removeListener(mSessionTracker);
-                mSessionTracker.clearSessions();
-                mSessionTracker = null;
-            }
-        }
-    }
-
-    /**
-     * Start features at app level, this is not done if only libraries started the service.
-     */
-    @WorkerThread
-    private void startAppLevelFeatures() {
-
-        /* Share the started from app check between all calls. */
-        if (mStartedFromApp) {
 
             /* Enable filtering logs. */
             mAnalyticsValidator = new AnalyticsValidator();
@@ -482,13 +441,21 @@ public class Analytics extends AbstractAppCenterService {
             /* Start session tracker. */
             mSessionTracker = new SessionTracker(mChannel, ANALYTICS_GROUP);
             mChannel.addListener(mSessionTracker);
-
-            /* If we are in foreground, make sure we send start session log now (and track page). */
             if (mCurrentActivity != null) {
                 Activity activity = mCurrentActivity.get();
                 if (activity != null) {
                     processOnResume(activity);
                 }
+            }
+        } else {
+            if (mAnalyticsValidator != null) {
+                mChannel.removeListener(mAnalyticsValidator);
+                mAnalyticsValidator = null;
+            }
+            if (mSessionTracker != null) {
+                mChannel.removeListener(mSessionTracker);
+                mSessionTracker.clearSessions();
+                mSessionTracker = null;
             }
         }
     }
@@ -507,13 +474,7 @@ public class Analytics extends AbstractAppCenterService {
 
             @Override
             public void run() {
-
-                /* This flag is always read/written in the background thread. */
-                if (mStartedFromApp) {
-                    queuePage(name, propertiesCopy);
-                } else {
-                    AppCenterLog.error(LOG_TAG, "Cannot track page if not started from app.");
-                }
+                queuePage(name, propertiesCopy);
             }
         });
     }
@@ -543,22 +504,14 @@ public class Analytics extends AbstractAppCenterService {
 
             @Override
             public void run() {
-                AnalyticsTransmissionTarget aTransmissionTarget = (transmissionTarget == null) ? mDefaultTransmissionTarget : transmissionTarget;
                 EventLog eventLog = new EventLog();
-                if (aTransmissionTarget != null) {
-                    if (aTransmissionTarget.isEnabled()) {
-                        eventLog.addTransmissionTarget(aTransmissionTarget.getTransmissionTargetToken());
-                    } else {
-                        AppCenterLog.error(LOG_TAG, "This transmission target is disabled.");
-                        return;
-                    }
-                } else if (!mStartedFromApp) {
-                    AppCenterLog.error(LOG_TAG, "Cannot track event using Analytics.trackEvent if not started from app, please start from the application or use Analytics.getTransmissionTarget.");
-                    return;
-                }
                 eventLog.setId(UUIDUtils.randomUUID());
                 eventLog.setName(name);
                 eventLog.setProperties(propertiesCopy);
+                AnalyticsTransmissionTarget aTransmissionTarget = (transmissionTarget == null) ? mDefaultTransmissionTarget : transmissionTarget;
+                if (aTransmissionTarget != null) {
+                    eventLog.addTransmissionTarget(aTransmissionTarget.getTransmissionTargetToken());
+                }
                 mChannel.enqueue(eventLog, ANALYTICS_GROUP);
             }
         });
@@ -591,50 +544,10 @@ public class Analytics extends AbstractAppCenterService {
     }
 
     @Override
-    public synchronized void onStarted(@NonNull Context context, @NonNull Channel channel, String appSecret, String transmissionTargetToken, boolean startedFromApp) {
-        mStartedFromApp = startedFromApp;
-        super.onStarted(context, channel, appSecret, transmissionTargetToken, startedFromApp);
-        setDefaultTransmissionTarget(transmissionTargetToken);
-    }
+    public synchronized void onStarted(@NonNull Context context, String appSecret, String transmissionTargetToken, @NonNull Channel channel) {
+        super.onStarted(context, appSecret, transmissionTargetToken, channel);
 
-    @Override
-    public void onConfigurationUpdated(String appSecret, String transmissionTargetToken) {
-        mStartedFromApp = true;
-        startAppLevelFeatures();
-        setDefaultTransmissionTarget(transmissionTargetToken);
-    }
-
-    /**
-     * Set a default transmission target if a token has been provided.
-     */
-    @WorkerThread
-    private void setDefaultTransmissionTarget(String transmissionTargetToken) {
+        /* Initialize a default transmission target if a token has been provided. */
         mDefaultTransmissionTarget = getInstanceTransmissionTarget(transmissionTargetToken);
-    }
-
-    /**
-     * Post a command.
-     *
-     * @param runnable                    command.
-     * @param future                      future to hold result.
-     * @param valueIfDisabledOrNotStarted result to set in future if AppCenter or Analytics disabled or not started.
-     * @param <T>                         result type.
-     */
-    <T> void postCommand(Runnable runnable, DefaultAppCenterFuture<T> future, T valueIfDisabledOrNotStarted) {
-
-        /*
-         * For the purpose of the commands used for this method,
-         * it turns out the non get operations use the same flow as get.
-         */
-        postAsyncGetter(runnable, future, valueIfDisabledOrNotStarted);
-    }
-
-    /**
-     * Get preference storage key prefix for this service.
-     *
-     * @return storage key.
-     */
-    String getEnabledPreferenceKeyPrefix() {
-        return getEnabledPreferenceKey() + "/";
     }
 }

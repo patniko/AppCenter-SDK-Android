@@ -25,10 +25,8 @@ public abstract class LogActivity extends AppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(getLayoutId());
+        setContentView(R.layout.activity_log);
         mLayoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
-        /* Property view init. */
         mList = findViewById(R.id.list);
         addProperty();
     }
@@ -71,7 +69,20 @@ public abstract class LogActivity extends AppCompatActivity {
         trackLog(name, properties);
     }
 
-    abstract void trackLog(String name, Map<String, String> properties);
+    protected abstract void trackLog(String name, Map<String, String> properties);
 
-    abstract int getLayoutId();
+    /**
+     * Get transmission target to use or null to use default transmission (static singleton).
+     *
+     * @return transmission target or null for default.
+     */
+    String getTransmissionTarget() {
+
+        /* First item is always empty as it's default value which means either appcenter, one collector or both. */
+        int pos = mTransmissionTargetSpinner.getSelectedItemPosition();
+        if (pos == 0) {
+            return null;
+        }
+        return mTransmissionTargets[pos];
+    }
 }

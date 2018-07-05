@@ -53,7 +53,7 @@ public class DefaultChannel implements Channel {
     /**
      * The application secret for the ingestion service.
      */
-    private String mAppSecret;
+    private final String mAppSecret;
 
     /**
      * The installId that's required for forwarding to ingestion.
@@ -134,16 +134,19 @@ public class DefaultChannel implements Channel {
      * @param appCenterHandler App Center looper thread handler.
      */
     @VisibleForTesting
-    DefaultChannel(@NonNull Context context, String appSecret, @NonNull Persistence persistence, @NonNull Ingestion ingestion, @NonNull Handler appCenterHandler) {
+    DefaultChannel(@NonNull Context context, String appSecret, @NonNull Persistence persistence, Ingestion ingestion, @NonNull Handler appCenterHandler) {
+        boolean appSecretNullOrEmpty = appSecret == null || appSecret.isEmpty();
         mContext = context;
         mAppSecret = appSecret;
         mInstallId = IdHelper.getInstallId();
         mGroupStates = new HashMap<>();
         mListeners = new LinkedHashSet<>();
         mPersistence = persistence;
-        mIngestion = ingestion;
+        mIngestion = appSecretNullOrEmpty ? null : ingestion;
         mIngestions = new HashSet<>();
-        mIngestions.add(mIngestion);
+        if (mIngestion != null) {
+            mIngestions.add(mIngestion);
+        }
         mAppCenterHandler = appCenterHandler;
         mEnabled = true;
     }
@@ -172,40 +175,22 @@ public class DefaultChannel implements Channel {
     }
 
     @Override
-    public synchronized void setAppSecret(@NonNull String appSecret) {
-
-        /* Set app secret. */
-        mAppSecret = appSecret;
-
-        /* Resume sending logs for groups that use default ingestion once app secret is known. */
-        if (mEnabled) {
-            for (GroupState groupState : mGroupStates.values()) {
-                if (groupState.mIngestion == mIngestion) {
-                    checkPendingLogs(groupState.mName);
-                }
-            }
-        }
-    }
-
-    @Override
     public synchronized void addGroup(final String groupName, int maxLogsPerBatch, long batchTimeInterval, int maxParallelBatches, Ingestion ingestion, GroupListener groupListener) {
 
         /* Init group. */
         AppCenterLog.debug(LOG_TAG, "addGroup(" + groupName + ")");
         ingestion = ingestion == null ? mIngestion : ingestion;
-        mIngestions.add(ingestion);
+        if (ingestion != null) {
+            mIngestions.add(ingestion);
+        }
         final GroupState groupState = new GroupState(groupName, maxLogsPerBatch, batchTimeInterval, maxParallelBatches, ingestion, groupListener);
         mGroupStates.put(groupName, groupState);
 
         /* Count pending logs. */
         groupState.mPendingLogCount = mPersistence.countLogs(groupName);
 
-        /* If no app secret, don't resume sending App Center logs from storage. */
-        if (mAppSecret != null && mIngestion == ingestion) {
-
-            /* Schedule sending any pending log. */
-            checkPendingLogs(groupState.mName);
-        }
+        /* Schedule sending any pending log. */
+        checkPendingLogs(groupState.mName);
 
         /* Call listeners so that they can react on group adding. */
         for (Listener listener : mListeners) {
@@ -265,7 +250,10 @@ public class DefaultChannel implements Channel {
     }
 
     @Override
-    public synchronized void setLogUrl(String logUrl) {
+    public void setLogUrl(String logUrl) {
+        if (mIngestion == null) {
+            return;
+        }
         mIngestion.setLogUrl(logUrl);
     }
 
@@ -276,7 +264,7 @@ public class DefaultChannel implements Channel {
      */
     @Override
     public synchronized void clear(String groupName) {
-        if (!mGroupStates.containsKey(groupName)) {
+        if (!mGroupStates.containsKey(groupName) || mGroupStates.get(groupName).mIngestion == null) {
             return;
         }
         AppCenterLog.debug(LOG_TAG, "clear(" + groupName + ")");
@@ -354,6 +342,9 @@ public class DefaultChannel implements Channel {
     }
 
     private void cancelTimer(GroupState groupState) {
+        if (groupState.mIngestion == null) {
+            return;
+        }
         if (groupState.mScheduled) {
             groupState.mScheduled = false;
             mAppCenterHandler.removeCallbacks(groupState.mRunnable);
@@ -613,7 +604,7 @@ public class DefaultChannel implements Channel {
         if (filteredOut) {
             AppCenterLog.debug(LOG_TAG, "Log of type '" + log.getType() + "' was filtered out by listener(s)");
         } else {
-            if (mAppSecret == null && groupState.mIngestion == mIngestion) {
+            if (groupState.mIngestion == null) {
 
                 /* Log was not filtered out but no app secret has been provided. Do nothing in this case. */
                 AppCenterLog.debug(LOG_TAG, "Log of type '" + log.getType() + "' was not filtered out by listener(s) but no app secret was provided. Not persisting/sending the log.");
