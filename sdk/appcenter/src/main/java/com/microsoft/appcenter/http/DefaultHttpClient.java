@@ -2,16 +2,11 @@ package com.microsoft.appcenter.http;
 
 import android.net.TrafficStats;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.support.annotation.VisibleForTesting;
-import android.util.Log;
 
 import com.microsoft.appcenter.utils.AppCenterLog;
 import com.microsoft.appcenter.utils.HandlerUtils;
 
-import org.json.JSONObject;
-
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -20,8 +15,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.RejectedExecutionException;
-
-import javax.net.ssl.HttpsURLConnection;
 
 import static com.microsoft.appcenter.AppCenter.LOG_TAG;
 import static java.lang.Math.max;
@@ -135,19 +128,8 @@ public class DefaultHttpClient implements HttpClient {
 
         /* HTTP session. */
         URL url = new URL(urlString);
-        HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
         try {
-
-            /*
-             * Make sure we use TLS 1.2 when the device supports it but not enabled by default.
-             * Don't hardcode TLS version when enabled by default to avoid unnecessary wrapping and
-             * to support future versions of TLS such as say 1.3 without having to patch this code.
-             * We have to drop support for API level 15 if we want to enforce TLS 1.2 on all devices.
-             */
-            int apiLevel = Build.VERSION.SDK_INT;
-            if (apiLevel >= Build.VERSION_CODES.JELLY_BEAN && apiLevel < Build.VERSION_CODES.KITKAT_WATCH) {
-                urlConnection.setSSLSocketFactory(new TLS1_2SocketFactory());
-            }
 
             /* Configure connection timeouts. */
             urlConnection.setConnectTimeout(CONNECT_TIMEOUT);
@@ -165,23 +147,10 @@ public class DefaultHttpClient implements HttpClient {
                 callTemplate.onBeforeCalling(url, headers);
             }
 
-            /* Send payload. */
-            if (binaryPayload != null) {
-
-                /* Compress payload if large enough to be worth it. */
-                if (AppCenterLog.getLogLevel() <= Log.VERBOSE) {
-                    if (CONTENT_TYPE_VALUE.equals(headers.get(CONTENT_TYPE_KEY))) {
-                        payload = new JSONObject(payload).toString(2);
-                    }
-                    AppCenterLog.verbose(LOG_TAG, payload);
-                }
-                if (shouldCompress) {
-                    ByteArrayOutputStream gzipBuffer = new ByteArrayOutputStream(binaryPayload.length);
-                    GZIPOutputStream gzipStream = new GZIPOutputStream(gzipBuffer);
-                    gzipStream.write(binaryPayload);
-                    gzipStream.close();
-                    binaryPayload = gzipBuffer.toByteArray();
-                }
+            /* Build payload. */
+            if (method.equals(METHOD_POST) && callTemplate != null) {
+                String payload = callTemplate.buildRequestBody();
+                AppCenterLog.verbose(LOG_TAG, payload);
 
                 /* Send payload through the wire. */
                 byte[] binaryPayload = payload.getBytes(CHARSET_NAME);

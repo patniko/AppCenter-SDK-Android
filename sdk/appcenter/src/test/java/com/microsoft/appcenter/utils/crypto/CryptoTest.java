@@ -42,6 +42,7 @@ import static com.microsoft.appcenter.utils.crypto.CryptoConstants.KEYSTORE_ALIA
 import static com.microsoft.appcenter.utils.crypto.CryptoConstants.RSA_KEY_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -99,14 +100,14 @@ public class CryptoTest {
         when(Base64.encodeToString(any(byte[].class), anyInt())).thenAnswer(new Answer<String>() {
 
             @Override
-            public String answer(InvocationOnMock invocation) {
+            public String answer(InvocationOnMock invocation) throws Throwable {
                 return new String((byte[]) invocation.getArguments()[0]);
             }
         });
         when(Base64.decode(anyString(), anyInt())).thenAnswer(new Answer<byte[]>() {
 
             @Override
-            public byte[] answer(InvocationOnMock invocation) {
+            public byte[] answer(InvocationOnMock invocation) throws Throwable {
                 return invocation.getArguments()[0].toString().getBytes();
             }
         });
@@ -133,7 +134,7 @@ public class CryptoTest {
         when(mCipher.doFinal(any(byte[].class))).thenAnswer(new Answer<byte[]>() {
 
             @Override
-            public byte[] answer(InvocationOnMock invocation) {
+            public byte[] answer(InvocationOnMock invocation) throws Throwable {
                 return (byte[]) invocation.getArguments()[0];
             }
         });
@@ -160,7 +161,7 @@ public class CryptoTest {
         when(mCipher.doFinal(any(byte[].class), anyInt(), anyInt())).thenAnswer(new Answer<byte[]>() {
 
             @Override
-            public byte[] answer(InvocationOnMock invocation) {
+            public byte[] answer(InvocationOnMock invocation) throws Throwable {
                 byte[] input = (byte[]) invocation.getArguments()[0];
                 int offset = (int) invocation.getArguments()[1];
                 int length = (int) invocation.getArguments()[2];
@@ -176,7 +177,7 @@ public class CryptoTest {
 
     @Test
     public void initCryptoConstants() {
-        new CryptoConstants();
+        assertNotNull(new CryptoConstants());
     }
 
     @Test
@@ -232,7 +233,7 @@ public class CryptoTest {
     }
 
     @Test
-    public void decryptUnknownAlgorithm() {
+    public void decryptUnknownAlgorithm() throws Exception {
         CryptoUtils cryptoUtils = new CryptoUtils(mContext, mCryptoFactory, Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1);
         CryptoUtils.DecryptedData data = cryptoUtils.decrypt("rot13:caesar", false);
         assertEquals("rot13:caesar", data.getDecryptedData());

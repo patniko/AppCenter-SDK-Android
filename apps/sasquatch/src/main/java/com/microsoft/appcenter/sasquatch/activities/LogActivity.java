@@ -70,19 +70,4 @@ public abstract class LogActivity extends AppCompatActivity {
     }
 
     protected abstract void trackLog(String name, Map<String, String> properties);
-
-    /**
-     * Get transmission target to use or null to use default transmission (static singleton).
-     *
-     * @return transmission target or null for default.
-     */
-    String getTransmissionTarget() {
-
-        /* First item is always empty as it's default value which means either appcenter, one collector or both. */
-        int pos = mTransmissionTargetSpinner.getSelectedItemPosition();
-        if (pos == 0) {
-            return null;
-        }
-        return mTransmissionTargets[pos];
-    }
 }

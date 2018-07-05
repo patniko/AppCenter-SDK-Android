@@ -9,7 +9,7 @@ import java.util.Map;
  */
 public class AnalyticsTransmissionTarget {
 
-    private final String mTransmissionTargetToken;
+    private String mTransmissionTargetToken;
 
     /**
      * Create a new instance.

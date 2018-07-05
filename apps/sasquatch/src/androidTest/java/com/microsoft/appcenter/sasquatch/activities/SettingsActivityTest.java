@@ -37,7 +37,7 @@ public class SettingsActivityTest {
     private Context mContext;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         mContext = getInstrumentation().getTargetContext();
 
         /* Clear preferences. */

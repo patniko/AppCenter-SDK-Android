@@ -189,7 +189,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void continueIfReleaseHashNotEqualsToFailedPackageHash() {
+    public void continueIfReleaseHashNotEqualsToFailedPackageHash() throws Exception {
         when(PreferencesStorage.getString(PREFERENCE_KEY_UPDATE_SETUP_FAILED_PACKAGE_HASH_KEY)).thenReturn("some_hash");
         mockStatic(DistributeUtils.class);
 
@@ -213,7 +213,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void storeUpdateSetupFailedParameterBeforeStart() {
+    public void storeUpdateSetupFailedParameterBeforeStart() throws Exception {
 
         /* Setup mock. */
         when(PreferencesStorage.getString(PREFERENCE_KEY_REQUEST_ID)).thenReturn("r");
@@ -224,7 +224,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void storeTesterAppUpdateSetupFailedParameterBeforeStart() {
+    public void storeTesterAppUpdateSetupFailedParameterBeforeStart() throws Exception {
 
         /* Setup mock. */
         when(PreferencesStorage.getString(PREFERENCE_KEY_REQUEST_ID)).thenReturn("r");
@@ -235,7 +235,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void storeUpdateSetupFailedParameterWithIncorrectRequestIdBeforeStart() {
+    public void storeUpdateSetupFailedParameterWithIncorrectRequestIdBeforeStart() throws Exception {
 
         /* Setup mock. */
         when(PreferencesStorage.getString(PREFERENCE_KEY_REQUEST_ID)).thenReturn("r");
@@ -246,7 +246,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void storeTesterAppUpdateSetupFailedParameterWithIncorrectRequestIdBeforeStart() {
+    public void storeTesterAppUpdateSetupFailedParameterWithIncorrectRequestIdBeforeStart() throws Exception {
 
         /* Setup mock. */
         when(PreferencesStorage.getString(PREFERENCE_KEY_REQUEST_ID)).thenReturn("r");
@@ -354,7 +354,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
         doAnswer(new Answer<Void>() {
 
             @Override
-            public Void answer(InvocationOnMock invocation) {
+            public Void answer(InvocationOnMock invocation) throws Throwable {
                 runnable.set((Runnable) invocation.getArguments()[0]);
                 return null;
             }
@@ -380,7 +380,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void disableBeforeHandleUpdateSetupFailureDialogIgnoreAction() {
+    public void disableBeforeHandleUpdateSetupFailureDialogIgnoreAction() throws Exception {
         ArgumentCaptor<DialogInterface.OnClickListener> clickListener = ArgumentCaptor.forClass(DialogInterface.OnClickListener.class);
         showUpdateSetupFailedDialog();
         verify(mDialogBuilder).setPositiveButton(eq(R.string.appcenter_distribute_update_failed_dialog_ignore), clickListener.capture());
@@ -394,7 +394,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void disableBeforeHandleUpdateSetupFailureDialogReinstallAction() {
+    public void disableBeforeHandleUpdateSetupFailureDialogReinstallAction() throws Exception {
         ArgumentCaptor<DialogInterface.OnClickListener> clickListener = ArgumentCaptor.forClass(DialogInterface.OnClickListener.class);
         showUpdateSetupFailedDialog();
         verify(mDialogBuilder).setNegativeButton(eq(R.string.appcenter_distribute_update_failed_dialog_reinstall), clickListener.capture());
@@ -437,7 +437,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void handleFailedUpdateSetupDialogIgnoreAction() {
+    public void handleFailedUpdateSetupDialogIgnoreAction() throws URISyntaxException {
         when(PreferencesStorage.getString(PREFERENCE_KEY_UPDATE_SETUP_FAILED_MESSAGE_KEY)).thenReturn("failed_message_from_backend");
         when(mDialog.isShowing()).thenReturn(false);
         when(mDialogBuilder.create()).thenReturn(mDialog);
@@ -463,7 +463,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void verifyFailedUpdateSetupDialogIsAlreadyShownInSameActivity() {
+    public void verifyFailedUpdateSetupDialogIsAlreadyShownInSameActivity() throws Exception {
         when(PreferencesStorage.getString(PREFERENCE_KEY_UPDATE_SETUP_FAILED_MESSAGE_KEY)).thenReturn("failed_message_from_backend");
 
         /* Trigger call. */
@@ -1122,7 +1122,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
         when(httpClient.callAsync(anyString(), anyString(), anyMapOf(String.class, String.class), any(HttpClient.CallTemplate.class), any(ServiceCallback.class))).thenAnswer(new Answer<ServiceCall>() {
 
             @Override
-            public ServiceCall answer(InvocationOnMock invocation) {
+            public ServiceCall answer(InvocationOnMock invocation) throws Throwable {
                 ((ServiceCallback) invocation.getArguments()[4]).onCallFailed(exception);
                 return mock(ServiceCall.class);
             }
@@ -1199,7 +1199,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
         when(httpClient.callAsync(anyString(), anyString(), anyMapOf(String.class, String.class), any(HttpClient.CallTemplate.class), any(ServiceCallback.class))).thenAnswer(new Answer<ServiceCall>() {
 
             @Override
-            public ServiceCall answer(InvocationOnMock invocation) {
+            public ServiceCall answer(InvocationOnMock invocation) throws Throwable {
                 ((ServiceCallback) invocation.getArguments()[4]).onCallSucceeded("mock");
                 return mock(ServiceCall.class);
             }
@@ -1235,7 +1235,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
         when(httpClient.callAsync(anyString(), anyString(), anyMapOf(String.class, String.class), any(HttpClient.CallTemplate.class), any(ServiceCallback.class))).thenAnswer(new Answer<ServiceCall>() {
 
             @Override
-            public ServiceCall answer(final InvocationOnMock invocation) {
+            public ServiceCall answer(final InvocationOnMock invocation) throws Throwable {
                 new Thread() {
 
                     @Override
@@ -1287,7 +1287,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
         when(httpClient.callAsync(anyString(), anyString(), anyMapOf(String.class, String.class), any(HttpClient.CallTemplate.class), any(ServiceCallback.class))).thenAnswer(new Answer<ServiceCall>() {
 
             @Override
-            public ServiceCall answer(final InvocationOnMock invocation) {
+            public ServiceCall answer(final InvocationOnMock invocation) throws Throwable {
                 new Thread() {
 
                     @Override
@@ -1504,7 +1504,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void enqueueDistributionStartSessionLogAfterEnablingUpdates() {
+    public void enqueueDistributionStartSessionLogAfterEnablingUpdates() throws Exception {
 
         /* Setup mock. */
         mockStatic(SessionContext.class);
@@ -1524,7 +1524,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void dontEnqueueDistributionStartSessionLogIfLastSessionIdIsNull() {
+    public void dontEnqueueDistributionStartSessionLogIfLastSessionIdIsNull() throws Exception {
 
         /* Setup mock. */
         mockStatic(SessionContext.class);
@@ -1544,7 +1544,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void dontEnqueueDistributionStartSessionLogIfNoSessionsWereLoggedBefore() {
+    public void dontEnqueueDistributionStartSessionLogIfNoSessionsWereLoggedBefore() throws Exception {
 
         /* Setup mock. */
         mockStatic(SessionContext.class);
@@ -1562,7 +1562,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void shouldChangeDistributionGroupIdIfStoredIdDoesntMatchDownloadedId() {
+    public void shouldChangeDistributionGroupIdIfStoredIdDoesntMatchDownloadedId() throws Exception {
 
         /* Mock release details. */
         String downloadedDistributionGroupId = "fake-downloaded-id";
@@ -1583,7 +1583,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void shouldChangeDistributionGroupIdIfStoredIdIsNull() {
+    public void shouldChangeDistributionGroupIdIfStoredIdIsNull() throws Exception {
 
         /* Mock release details. */
         String downloadedDistributionGroupId = "fake-downloaded-id";
@@ -1604,7 +1604,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void shouldNotChangeDistributionGroupIdIfStoredIdMatchDownloadedId() {
+    public void shouldNotChangeDistributionGroupIdIfStoredIdMatchDownloadedId() throws Exception {
 
         /* Mock release details. */
         mockStatic(DistributeUtils.class);
@@ -1624,7 +1624,7 @@ public class DistributeBeforeApiSuccessTest extends AbstractDistributeTest {
     }
 
     @Test
-    public void shouldNotChangeDistributionGroupIdIfAppWasntUpdated() {
+    public void shouldNotChangeDistributionGroupIdIfAppWasntUpdated() throws Exception {
 
         /* Mock release details. */
         mockStatic(DistributeUtils.class);

@@ -1,6 +1,5 @@
 package com.microsoft.appcenter.sasquatch.activities;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -60,10 +59,8 @@ public class MainActivity extends AppCompatActivity {
 
     static SharedPreferences sSharedPreferences;
 
-    @SuppressLint("StaticFieldLeak")
     static SasquatchAnalyticsListener sAnalyticsListener;
 
-    @SuppressLint("StaticFieldLeak")
     static SasquatchCrashesListener sCrashesListener;
 
     static SasquatchPushListener sPushListener;
