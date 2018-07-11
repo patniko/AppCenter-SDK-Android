@@ -10,7 +10,9 @@ import com.microsoft.appcenter.assets.datacontracts.AssetsDownloadPackageResult;
 import com.microsoft.appcenter.assets.datacontracts.AssetsLocalPackage;
 import com.microsoft.appcenter.assets.datacontracts.AssetsPackage;
 import com.microsoft.appcenter.assets.datacontracts.AssetsRemotePackage;
+import com.microsoft.appcenter.assets.datacontracts.AssetsSyncOptions;
 import com.microsoft.appcenter.assets.enums.AssetsInstallMode;
+import com.microsoft.appcenter.assets.enums.AssetsSyncStatus;
 import com.microsoft.appcenter.assets.enums.AssetsUpdateState;
 import com.microsoft.appcenter.assets.interfaces.AssetsPlatformUtils;
 import com.microsoft.appcenter.assets.managers.AssetsAcquisitionManager;
@@ -20,6 +22,7 @@ import com.microsoft.appcenter.assets.utils.AssetsUtils;
 import com.microsoft.appcenter.assets.utils.FileUtils;
 
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.api.support.membermodification.MemberMatcher;
 import org.powermock.api.support.membermodification.MemberModifier;
 
 import java.io.File;
@@ -37,6 +40,7 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 /**
  * Contains util methods for testing {@link AssetsAndroidCore}.
@@ -73,7 +77,7 @@ public class CoreTestUtils {
      * Injects the provided instance of {@link AssetsUtilities} into {@link AssetsAndroidCore}.
      *
      * @param assetsPlatformUtils fake assets platform utils.
-     * @param fileUtils fake file utils.
+     * @param fileUtils           fake file utils.
      */
     public void injectUtilitiesInCore(AssetsPlatformUtils assetsPlatformUtils, FileUtils fileUtils, AssetsUtils assetsUtils) throws Exception {
         AssetsUtilities assetsUtilities = mock(AssetsUtilities.class);
@@ -90,7 +94,6 @@ public class CoreTestUtils {
         MemberModifier.field(AssetsBaseCore.class, "mUtilities").set(mAssetsBaseCore, assetsUtilities);
     }
 
-
     /**
      * Mock the Context field inside of the {@link AssetsAndroidCore}.
      */
@@ -100,9 +103,10 @@ public class CoreTestUtils {
 
     /**
      * Mocks {@link SettingsManager#saveFailedUpdate(AssetsPackage)}.
+     *
      * @return instance of {@link SettingsManager}.
      */
-    public SettingsManager mockSaveFailedUpdates() throws  Exception {
+    public SettingsManager mockSaveFailedUpdates() throws Exception {
         SettingsManager settingsManager = mock(SettingsManager.class);
         doNothing().when(settingsManager).saveFailedUpdate(any(AssetsRemotePackage.class));
         return settingsManager;
@@ -110,6 +114,7 @@ public class CoreTestUtils {
 
     /**
      * Mocks {@link AssetsPlatformUtils#getBinaryResourcesModifiedTime(Context)} to return the specified value.
+     *
      * @param binaryResourcesModifiedTime value to be returned.
      * @return instance of mocked {@link AssetsPlatformUtils}.
      */
@@ -121,7 +126,8 @@ public class CoreTestUtils {
 
     /**
      * Mocks creating download request.
-     * @param downloadUrl url to be called with.
+     *
+     * @param downloadUrl  url to be called with.
      * @param downloadFile file to be called with.
      */
     public void mockCreatingRequest(String downloadUrl, File downloadFile) throws Exception {
@@ -132,13 +138,40 @@ public class CoreTestUtils {
     }
 
     /**
+     * Mocks {@link AssetsSyncOptions}.
+     * @param deploymentKey if <code>null</code>, does not mock {@link AssetsSyncOptions#deploymentKey}.
+     * @param ignoreFailedUpdates parameter to be returned.
+     * @return instance of {@link AssetsSyncOptions}.
+     */
+    public AssetsSyncOptions mockSyncOptions(String deploymentKey, boolean ignoreFailedUpdates) {
+        AssetsSyncOptions assetsSyncOptions = mock(AssetsSyncOptions.class);
+        if (deploymentKey!=null) {
+            when(assetsSyncOptions.getDeploymentKey()).thenReturn(deploymentKey);
+        }
+        when(assetsSyncOptions.getCheckFrequency()).thenReturn(null);
+        when(assetsSyncOptions.getInstallMode()).thenReturn(null);
+        when(assetsSyncOptions.getMandatoryInstallMode()).thenReturn(null);
+        when(assetsSyncOptions.getIgnoreFailedUpdates()).thenReturn(ignoreFailedUpdates);
+        return assetsSyncOptions;
+    }
+
+    /**
+     * Verifies that {@link AssetsBaseCore#notifyAboutSyncStatusChange(AssetsSyncStatus)} was called on
+     * passed parameter.
+     * @param assetsSyncStatus status to verify the call for.
+     */
+    public void verifyNotifySyncStatusCalled(AssetsSyncStatus assetsSyncStatus) throws Exception {
+        PowerMockito.verifyPrivate(mAssetsBaseCore, times(1)).invoke("notifyAboutSyncStatusChange", assetsSyncStatus);
+    }
+
+    /**
      * Mock the <code>mEntryPoint</code> field inside of the {@link AssetsAndroidCore}.
+     *
      * @param entryPoint entry point to set.
      */
     public void mockEntryPoint(String entryPoint) throws Exception {
         MemberModifier.field(AssetsBaseCore.class, "mEntryPoint").set(mAssetsBaseCore, entryPoint);
     }
-
 
     /**
      * Injects the provided instance of {@link AssetsUpdateManager} into {@link AssetsAndroidCore}.
@@ -164,6 +197,38 @@ public class CoreTestUtils {
 
         MemberModifier.field(AssetsManagers.class, "mAcquisitionManager").set(assetsManagers, assetsAcquisitionManager);
         MemberModifier.field(AssetsBaseCore.class, "mManagers").set(mAssetsBaseCore, assetsManagers);
+    }
+
+    /**
+     * Mocks {@link AssetsBaseCore#mState}.
+     * @param binary value to be set to {@link AssetsState#mIsRunningBinaryVersion}.
+     * @param syncInProgress value to be set to {@link AssetsState#mSyncInProgress}.
+     * @return instance of {@link AssetsState}.
+     */
+    public AssetsState mockState(boolean binary, boolean syncInProgress) throws Exception {
+        AssetsState assetsState = new AssetsState();
+        assetsState.mIsRunningBinaryVersion = binary;
+        assetsState.mSyncInProgress = syncInProgress;
+        MemberModifier.field(AssetsBaseCore.class, "mState").set(mAssetsBaseCore, assetsState);
+        return assetsState;
+    }
+
+    /**
+     * Calls {@link AssetsBaseCore#sync()}.
+     */
+    public void callSync() throws Exception {
+        doCallRealMethod().when(mAssetsBaseCore).sync();
+        doCallRealMethod().when(mAssetsBaseCore).sync(any(AssetsSyncOptions.class));
+        mAssetsBaseCore.sync();
+    }
+
+    /**
+     * Calls {@link AssetsBaseCore#sync(AssetsSyncOptions)} on passed options.
+     * @param assetsSyncOptions option to call the method with.
+     */
+    public void callSync(AssetsSyncOptions assetsSyncOptions) throws Exception {
+        doCallRealMethod().when(mAssetsBaseCore).sync(any(AssetsSyncOptions.class));
+        mAssetsBaseCore.sync(assetsSyncOptions);
     }
 
     /**
@@ -309,6 +374,13 @@ public class CoreTestUtils {
             when(configuration.getPackageHash()).thenReturn(packageHash);
         }
         return configuration;
+    }
+
+    public void mockDoDownloadAndInstall() {
+        MemberModifier
+                .stub(MemberMatcher.method(AssetsBaseCore.class,
+                        "doDownloadAndInstall"))
+                .toReturn(null);
     }
 
     /**
