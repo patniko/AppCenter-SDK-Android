@@ -5,7 +5,7 @@ import android.content.Context;
 import com.microsoft.appcenter.assets.exceptions.AssetsInitializeException;
 
 /**
- * A builder for {@link Assets.AssetsAPI} class.
+ * A builder for {@link Assets.AssetsDeploymentInstance} class.
  */
 public class AssetsBuilder {
 
@@ -101,13 +101,13 @@ public class AssetsBuilder {
     }
 
     /**
-     * Builds {@link Assets.AssetsAPI}.
+     * Builds {@link Assets.AssetsDeploymentInstance}.
      *
-     * @return instance of {@link Assets.AssetsAPI}.
+     * @return instance of {@link Assets.AssetsDeploymentInstance}.
      * @throws AssetsInitializeException initialization exception.
      */
-    public Assets.AssetsAPI build() throws AssetsInitializeException {
-        return mParentInstance.new AssetsAPI(
+    public Assets.AssetsDeploymentInstance build() throws AssetsInitializeException {
+        return mParentInstance.new AssetsDeploymentInstance(
                 this.mDeploymentKey,
                 this.mContext,
                 this.mIsDebugMode,

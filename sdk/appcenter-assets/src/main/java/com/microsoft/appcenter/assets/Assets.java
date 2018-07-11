@@ -130,7 +130,7 @@ public class Assets extends AbstractAppCenterService {
     /**
      * Exposed android API.
      */
-    public class AssetsAPI {
+    public class AssetsDeploymentInstance {
 
         /**
          * Instance of {@link AssetsAndroidCore}.
@@ -138,7 +138,7 @@ public class Assets extends AbstractAppCenterService {
         private AssetsAndroidCore mAndroidCore;
 
         /**
-         * Creates instance of {@link AssetsAPI}.
+         * Creates instance of {@link AssetsDeploymentInstance}.
          *
          * @param deploymentKey               application deployment key.
          * @param context                     application context.
@@ -148,7 +148,7 @@ public class Assets extends AbstractAppCenterService {
          * @param updateEntryPoint            path to the update contents inside of the package.
          * @throws AssetsInitializeException initialization exception.
          */
-        AssetsAPI(
+        AssetsDeploymentInstance(
                 @NonNull String deploymentKey,
                 @NonNull Context context,
                 boolean isDebugMode,

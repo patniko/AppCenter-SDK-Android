@@ -76,7 +76,7 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     protected byte[][] yuvBytes = new byte[3][];
     protected int yRowStride;
 
-    protected Assets.AssetsAPI assets;
+    protected Assets.AssetsDeploymentInstance assets;
     protected boolean mTrainingInProgress;
     protected boolean syncInProgress;
     protected boolean noModelOrLabel = true;

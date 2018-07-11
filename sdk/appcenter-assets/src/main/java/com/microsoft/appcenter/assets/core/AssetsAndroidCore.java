@@ -3,14 +3,16 @@ package com.microsoft.appcenter.assets.core;
 import android.content.Context;
 import android.support.annotation.NonNull;
 
+import com.microsoft.appcenter.assets.Assets;
 import com.microsoft.appcenter.assets.enums.AssetsInstallMode;
 import com.microsoft.appcenter.assets.exceptions.AssetsInitializeException;
-import com.microsoft.appcenter.assets.interfaces.AssetsEntryPointProvider;
 import com.microsoft.appcenter.assets.interfaces.AssetsConfirmationDialog;
+import com.microsoft.appcenter.assets.interfaces.AssetsEntryPointProvider;
 import com.microsoft.appcenter.assets.interfaces.AssetsPlatformUtils;
 import com.microsoft.appcenter.assets.interfaces.AssetsPublicKeyProvider;
 import com.microsoft.appcenter.assets.interfaces.AssetsRestartListener;
 import com.microsoft.appcenter.assets.interfaces.DownloadProgressCallback;
+import com.microsoft.appcenter.utils.AppCenterLog;
 
 import java.util.concurrent.Callable;
 
@@ -22,13 +24,13 @@ public class AssetsAndroidCore extends AssetsBaseCore {
     /**
      * Creates instance of the {@link AssetsAndroidCore}. Default constructor.
      *
-     * @param deploymentKey         application deployment key.
-     * @param context               application context.
-     * @param isDebugMode           indicates whether application is running in debug mode.
-     * @param serverUrl             CodePush server url.
-     * @param publicKeyProvider     instance of {@link AssetsPublicKeyProvider}.
+     * @param deploymentKey      application deployment key.
+     * @param context            application context.
+     * @param isDebugMode        indicates whether application is running in debug mode.
+     * @param serverUrl          CodePush server url.
+     * @param publicKeyProvider  instance of {@link AssetsPublicKeyProvider}.
      * @param entryPointProvider instance of {@link AssetsEntryPointProvider}.
-     * @param platformUtils         instance of {@link AssetsPlatformUtils}.
+     * @param platformUtils      instance of {@link AssetsPlatformUtils}.
      * @throws AssetsInitializeException error occurred during the initialization.
      */
     public AssetsAndroidCore(
@@ -60,10 +62,16 @@ public class AssetsAndroidCore extends AssetsBaseCore {
     }
 
     @Override protected void setConfirmationDialog(AssetsConfirmationDialog dialog) {
-        mConfirmationDialog  = dialog;
+        mConfirmationDialog = dialog;
     }
 
     @Override protected void loadApp(AssetsRestartListener assetsRestartListener) {
-
+        if (assetsRestartListener != null) {
+            try {
+                assetsRestartListener.onRestartFinished();
+            } catch (Exception e) {
+                AppCenterLog.error(Assets.LOG_TAG, e.getMessage());
+            }
+        }
     }
 }
