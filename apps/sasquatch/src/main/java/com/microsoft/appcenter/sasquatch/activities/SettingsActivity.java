@@ -1,6 +1,7 @@
 package com.microsoft.appcenter.sasquatch.activities;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -28,6 +29,7 @@ import com.microsoft.appcenter.crashes.Crashes;
 import com.microsoft.appcenter.distribute.Distribute;
 import com.microsoft.appcenter.push.Push;
 import com.microsoft.appcenter.sasquatch.R;
+import com.microsoft.appcenter.sasquatch.activities.MainActivity.StartType;
 import com.microsoft.appcenter.sasquatch.eventfilter.EventFilter;
 import com.microsoft.appcenter.utils.PrefStorageConstants;
 import com.microsoft.appcenter.utils.async.AppCenterFuture;
@@ -36,10 +38,8 @@ import com.microsoft.appcenter.utils.storage.StorageHelper;
 import java.lang.reflect.Method;
 import java.util.UUID;
 
-import com.microsoft.appcenter.sasquatch.activities.MainActivity.StartType;
-
-import static com.microsoft.appcenter.sasquatch.activities.MainActivity.APP_SECRET_KEY;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.APPCENTER_START_TYPE;
+import static com.microsoft.appcenter.sasquatch.activities.MainActivity.APP_SECRET_KEY;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.FIREBASE_ENABLED_KEY;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.LOG_URL_KEY;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.TARGET_KEY;
@@ -54,9 +54,12 @@ public class SettingsActivity extends AppCompatActivity {
 
     private static boolean sEventFilterStarted;
 
+    private static boolean sNeedRestartOnStartTypeUpdate;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        sNeedRestartOnStartTypeUpdate = !MainActivity.sSharedPreferences.getString(APPCENTER_START_TYPE, StartType.APP_SECRET.toString()).equals(StartType.SKIP_START.toString());
         getFragmentManager().beginTransaction()
                 .replace(android.R.id.content, new SettingsFragment())
                 .commit();
@@ -176,7 +179,7 @@ public class SettingsActivity extends AppCompatActivity {
             initCheckBoxSetting(R.string.appcenter_push_firebase_state_key, R.string.appcenter_push_firebase_summary_enabled, R.string.appcenter_push_firebase_summary_disabled, new HasEnabled() {
 
                 @Override
-                @SuppressWarnings("unchecked")
+                @SuppressWarnings({"unchecked", "JavaReflectionMemberAccess", "JavaReflectionInvocation"})
                 public void setEnabled(boolean enabled) {
                     try {
                         if (enabled) {
@@ -184,9 +187,10 @@ public class SettingsActivity extends AppCompatActivity {
                         } else {
                             try {
                                 Class firebaseAnalyticsClass = Class.forName("com.google.firebase.analytics.FirebaseAnalytics");
-                                Object analyticsInstance = firebaseAnalyticsClass.getMethod("getInstance").invoke(null, getActivity());
-                                firebaseAnalyticsClass.getMethod("setAnalyticsCollectionEnabled").invoke(analyticsInstance, true);
+                                Object analyticsInstance = firebaseAnalyticsClass.getMethod("getInstance", Context.class).invoke(null, getActivity());
+                                firebaseAnalyticsClass.getMethod("setAnalyticsCollectionEnabled", boolean.class).invoke(analyticsInstance, false);
                             } catch (Exception ignored) {
+
                                 /* Nothing to handle; this is reached if Firebase isn't being used. */
                             }
                         }
@@ -298,6 +302,16 @@ public class SettingsActivity extends AppCompatActivity {
                     return true;
                 }
             });
+
+            /* When changing start type from SKIP_START to other type, we need to trigger a preference change to update the display from null to actual value. */
+            initChangeableSetting(R.string.install_id_key, String.valueOf(AppCenter.getInstallId().get()), new Preference.OnPreferenceChangeListener() {
+
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    preference.setSummary(String.valueOf(AppCenter.getInstallId().get()));
+                    return true;
+                }
+            });
             initClickableSetting(R.string.app_secret_key, MainActivity.sSharedPreferences.getString(APP_SECRET_KEY, getString(R.string.app_secret)), new Preference.OnPreferenceClickListener() {
 
                 @Override
@@ -336,12 +350,27 @@ public class SettingsActivity extends AppCompatActivity {
             });
 
             /* Miscellaneous. */
-            initChangeableSetting(R.string.appcenter_start_type_key, MainActivity.sSharedPreferences.getString(APPCENTER_START_TYPE, StartType.APP_SECRET.toString()), new Preference.OnPreferenceChangeListener() {
+            String initialStartType = MainActivity.sSharedPreferences.getString(APPCENTER_START_TYPE, StartType.APP_SECRET.toString());
+            initChangeableSetting(R.string.appcenter_start_type_key, initialStartType, new Preference.OnPreferenceChangeListener() {
 
                 @Override
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    setKeyValue(APPCENTER_START_TYPE, (String) newValue);
+                    if (newValue == null) {
+                        return true;
+                    }
+                    String startValue = newValue.toString();
+                    setKeyValue(APPCENTER_START_TYPE, startValue);
                     preference.setSummary(MainActivity.sSharedPreferences.getString(APPCENTER_START_TYPE, null));
+
+                    /* Try to start now, this tests double calls log an error as well as valid call if previous type was none. */
+                    MainActivity.startAppCenter(getActivity().getApplication(), startValue);
+
+                    /* Invite to restart app to take effect. */
+                    if (sNeedRestartOnStartTypeUpdate) {
+                        Toast.makeText(getActivity(), R.string.appcenter_start_type_changed, Toast.LENGTH_SHORT).show();
+                    } else {
+                        sNeedRestartOnStartTypeUpdate = true;
+                    }
                     return true;
                 }
             });

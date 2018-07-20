@@ -6,7 +6,6 @@ include ':sdk:appcenter-analytics'
 include ':sdk:appcenter-distribute'
 include ':sdk:appcenter-push'
 include ':sdk:appcenter-rum'
-include ':sdk:appcenter-assets'
 
 // common test code
 include ':test'
@@ -14,4 +13,3 @@ include ':test'
 // test apps
 include ':apps'
 include ':apps:sasquatch'
-include ':apps:customvision'
