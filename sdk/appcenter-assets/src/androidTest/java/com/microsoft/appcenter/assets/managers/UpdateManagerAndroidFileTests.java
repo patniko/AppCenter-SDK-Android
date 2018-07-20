@@ -2,6 +2,8 @@ package com.microsoft.appcenter.assets.managers;
 
 import android.os.Environment;
 
+import com.microsoft.appcenter.assets.AssetsConfiguration;
+import com.microsoft.appcenter.assets.AssetsConstants;
 import com.microsoft.appcenter.assets.apirequests.ApiHttpRequest;
 import com.microsoft.appcenter.assets.exceptions.AssetsDownloadPackageException;
 import com.microsoft.appcenter.assets.exceptions.AssetsSignatureVerificationException;
@@ -55,7 +57,8 @@ public class UpdateManagerAndroidFileTests {
         FileUtils fileUtils = FileUtils.getInstance();
         AssetsUtils assetsUtils = AssetsUtils.getInstance(fileUtils);
         AssetsUpdateUtils assetsUpdateUtils = AssetsUpdateUtils.getInstance(fileUtils, assetsUtils);
-        recreateUpdateManager(fileUtils, assetsUtils, assetsUpdateUtils);
+        AssetsConfiguration assetsConfiguration = new AssetsConfiguration();
+        recreateUpdateManager(assetsConfiguration, fileUtils, assetsUtils, assetsUpdateUtils);
     }
 
     /**
@@ -65,8 +68,8 @@ public class UpdateManagerAndroidFileTests {
      * @param assetsUtils       mocked instance of {@link AssetsUtils}.
      * @param assetsUpdateUtils mocked instance of {@link AssetsUpdateUtils}.
      */
-    private void recreateUpdateManager(FileUtils fileUtils, AssetsUtils assetsUtils, AssetsUpdateUtils assetsUpdateUtils) {
-        assetsUpdateManager = new AssetsUpdateManager(new File(Environment.getExternalStorageDirectory(), "/Test").getPath(), mPlatformUtils, fileUtils, assetsUtils, assetsUpdateUtils);
+    private void recreateUpdateManager(AssetsConfiguration assetsConfiguration, FileUtils fileUtils, AssetsUtils assetsUtils, AssetsUpdateUtils assetsUpdateUtils) {
+        assetsUpdateManager = new AssetsUpdateManager(new File(Environment.getExternalStorageDirectory(), "/Test").getPath(), mPlatformUtils, fileUtils, assetsUtils, assetsUpdateUtils, assetsConfiguration);
     }
 
     /**
@@ -82,7 +85,9 @@ public class UpdateManagerAndroidFileTests {
         doReturn(true).when(fileUtils).fileAtPathExists(anyString());
         AssetsUtils assetsUtils = AssetsUtils.getInstance(fileUtils);
         AssetsUpdateUtils assetsUpdateUtils = AssetsUpdateUtils.getInstance(fileUtils, assetsUtils);
-        recreateUpdateManager(fileUtils, assetsUtils, assetsUpdateUtils);
+        AssetsConfiguration assetsConfiguration = new AssetsConfiguration();
+        assetsConfiguration.setAppName(AssetsConstants.ASSETS_DEFAULT_APP_NAME);
+        recreateUpdateManager(assetsConfiguration, fileUtils, assetsUtils, assetsUpdateUtils);
         assetsUpdateManager.downloadPackage("", mock(ApiHttpRequest.class));
     }
 
@@ -97,7 +102,8 @@ public class UpdateManagerAndroidFileTests {
         doThrow(new IOException()).when(fileUtils).unzipFile(any(File.class), any(File.class));
         AssetsUtils assetsUtils = AssetsUtils.getInstance(fileUtils);
         AssetsUpdateUtils assetsUpdateUtils = AssetsUpdateUtils.getInstance(fileUtils, assetsUtils);
-        recreateUpdateManager(fileUtils, assetsUtils, assetsUpdateUtils);
+        AssetsConfiguration assetsConfiguration = new AssetsConfiguration();
+        recreateUpdateManager(assetsConfiguration, fileUtils, assetsUtils, assetsUpdateUtils);
         assetsUpdateManager = spy(assetsUpdateManager);
         doReturn("").when(assetsUpdateManager).getUnzippedFolderPath();
         assetsUpdateManager.unzipPackage(mock(File.class));
@@ -114,7 +120,9 @@ public class UpdateManagerAndroidFileTests {
         AssetsUpdateUtils assetsUpdateUtils = AssetsUpdateUtils.getInstance(fileUtils, assetsUtils);
         assetsUpdateUtils = spy(assetsUpdateUtils);
         doThrow(new IOException()).when(assetsUpdateUtils).verifyFolderHash(anyString(), anyString());
-        recreateUpdateManager(fileUtils, assetsUtils, assetsUpdateUtils);
+        AssetsConfiguration assetsConfiguration = new AssetsConfiguration();
+        assetsConfiguration.setAppName(AssetsConstants.ASSETS_DEFAULT_APP_NAME);
+        recreateUpdateManager(assetsConfiguration, fileUtils, assetsUtils, assetsUpdateUtils);
         String newUpdateFolderPath = assetsUpdateManager.getPackageFolderPath(PACKAGE_HASH);
         assetsUpdateManager.verifySignature(newUpdateFolderPath, null, PACKAGE_HASH, true);
     }

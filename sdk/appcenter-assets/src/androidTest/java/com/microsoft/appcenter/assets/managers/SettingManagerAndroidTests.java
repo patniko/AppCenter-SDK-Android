@@ -2,6 +2,7 @@ package com.microsoft.appcenter.assets.managers;
 
 import android.support.test.InstrumentationRegistry;
 
+import com.microsoft.appcenter.assets.AssetsConfiguration;
 import com.microsoft.appcenter.assets.AssetsStatusReportIdentifier;
 import com.microsoft.appcenter.assets.datacontracts.AssetsDeploymentStatusReport;
 import com.microsoft.appcenter.assets.datacontracts.AssetsLocalPackage;
@@ -29,6 +30,7 @@ public class SettingManagerAndroidTests {
     private final static String LABEL = "awesome package";
     private final static boolean FAILED_INSTALL = false;
     private final static String APP_VERSION = "2.2.1";
+    private final static String APP_NAME = "app";
     private final static String DESCRIPTION = "short description";
     private final static boolean IS_MANDATORY = true;
     private final static String PACKAGE_HASH = "HASH";
@@ -38,6 +40,8 @@ public class SettingManagerAndroidTests {
      */
     private AssetsUtils mAssetsUtils;
 
+    private AssetsConfiguration mAssetsConfiguration;
+
     /**
      * Instance of {@link SettingsManager} to work with.
      */
@@ -46,7 +50,9 @@ public class SettingManagerAndroidTests {
     @Before
     public void setUp() throws Exception {
         mAssetsUtils = AssetsUtils.getInstance(FileUtils.getInstance());
-        mSettingsManager = new SettingsManager(InstrumentationRegistry.getContext(), mAssetsUtils);
+        mAssetsConfiguration = new AssetsConfiguration();
+        mAssetsConfiguration.setAppName(APP_NAME);
+        mSettingsManager = new SettingsManager(InstrumentationRegistry.getContext(), mAssetsUtils, mAssetsConfiguration);
     }
 
     /**
@@ -80,7 +86,7 @@ public class SettingManagerAndroidTests {
      */
     @Test(expected = AssetsMalformedDataException.class)
     public void pendingUpdateFailsIfJsonParseError() throws Exception {
-        CommonSettingsCompatibilityUtils.saveStringToPending("123", InstrumentationRegistry.getContext());
+        CommonSettingsCompatibilityUtils.saveStringToPending(mAssetsConfiguration, "123", InstrumentationRegistry.getContext());
         mSettingsManager.getPendingUpdate();
     }
 

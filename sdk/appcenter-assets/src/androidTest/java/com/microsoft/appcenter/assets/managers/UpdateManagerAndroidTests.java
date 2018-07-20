@@ -2,6 +2,7 @@ package com.microsoft.appcenter.assets.managers;
 
 import android.os.Environment;
 
+import com.microsoft.appcenter.assets.AssetsConfiguration;
 import com.microsoft.appcenter.assets.AssetsConstants;
 import com.microsoft.appcenter.assets.apirequests.ApiHttpRequest;
 import com.microsoft.appcenter.assets.apirequests.DownloadPackageTask;
@@ -41,7 +42,6 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotSame;
 import static junit.framework.Assert.assertNull;
-import static junit.framework.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -117,7 +117,11 @@ public class UpdateManagerAndroidTests {
         mFileUtils = FileUtils.getInstance();
         mAssetsUtils = AssetsUtils.getInstance(mFileUtils);
         AssetsUpdateUtils assetsUpdateUtils = AssetsUpdateUtils.getInstance(mFileUtils, mAssetsUtils);
-        assetsUpdateManager = new AssetsUpdateManager(Environment.getExternalStorageDirectory().getPath(), platformUtils, mFileUtils, mAssetsUtils, assetsUpdateUtils);
+        AssetsConfiguration assetsConfiguration = new AssetsConfiguration();
+        assetsConfiguration.setBaseDirectory(Environment.getExternalStorageDirectory().getPath());
+        assetsConfiguration.setAppName(AssetsConstants.ASSETS_FOLDER_PREFIX);
+        assetsConfiguration.setAppVersion("1.2");
+        assetsUpdateManager = new AssetsUpdateManager(Environment.getExternalStorageDirectory().getPath(), platformUtils, mFileUtils, mAssetsUtils, assetsUpdateUtils, assetsConfiguration);
         AssetsPackage assetsPackage = new AssetsPackage();
         assetsPackage.setAppVersion("1.2");
         assetsPackage.setPackageHash(FULL_PACKAGE_HASH);
@@ -153,7 +157,6 @@ public class UpdateManagerAndroidTests {
         assertEquals(FULL_PACKAGE_HASH, assetsPreviousPackage.getPackageHash());
         assertEquals(DIFF_PACKAGE_HASH, assetsPackage.getPackageHash());
         assertEquals(DIFF_PACKAGE_HASH, assetsCurrentPackage.getPackageHash());
-        assertTrue(mFileUtils.fileAtPathExists(assetsUpdateManager.getCurrentPackageEntryPath("index.html")));
     }
 
     /**

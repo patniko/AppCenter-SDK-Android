@@ -75,7 +75,7 @@ public class UpdateManagerAndroidTestUtils {
         String newUpdateFolderPath = assetsUpdateManager.getPackageFolderPath(packageHash);
         String newUpdateMetadataPath = new File(newUpdateFolderPath, PACKAGE_FILE_NAME).getPath();
         String entryPoint = assetsUpdateManager.mergeDiff(newUpdateFolderPath, newUpdateMetadataPath, packageHash, null, "index.html");
-        assertEquals("/www/index.html", entryPoint);
+        assertEquals("/" + AssetsConstants.ASSETS_DEFAULT_APP_NAME + "/index.html", entryPoint);
         assetsUpdateManager.installPackage(packageHash, false);
     }
 }
