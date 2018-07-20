@@ -31,6 +31,9 @@ public class AssetsAndroidCore extends AssetsBaseCore {
      * @param publicKeyProvider  instance of {@link AssetsPublicKeyProvider}.
      * @param entryPointProvider instance of {@link AssetsEntryPointProvider}.
      * @param platformUtils      instance of {@link AssetsPlatformUtils}.
+     * @param appName            application name.
+     * @param appVersion         application version to be overridden.
+     * @param baseDirectory      directory to be set as base instead of files dir, or <code>null</code>.
      * @throws AssetsInitializeException error occurred during the initialization.
      */
     public AssetsAndroidCore(
@@ -40,9 +43,12 @@ public class AssetsAndroidCore extends AssetsBaseCore {
             String serverUrl,
             AssetsPublicKeyProvider publicKeyProvider,
             AssetsEntryPointProvider entryPointProvider,
-            AssetsPlatformUtils platformUtils
+            AssetsPlatformUtils platformUtils,
+            String appVersion,
+            String appName,
+            String baseDirectory
     ) throws AssetsInitializeException {
-        super(deploymentKey, context, isDebugMode, serverUrl, publicKeyProvider, entryPointProvider, platformUtils);
+        super(deploymentKey, context, isDebugMode, serverUrl, publicKeyProvider, entryPointProvider, platformUtils, appVersion, appName, baseDirectory);
     }
 
     @Override protected DownloadProgressCallback getDownloadProgressCallbackForUpdateDownload() {

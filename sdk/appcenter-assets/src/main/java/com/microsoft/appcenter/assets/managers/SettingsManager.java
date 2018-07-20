@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.google.gson.JsonSyntaxException;
+import com.microsoft.appcenter.assets.AssetsConfiguration;
 import com.microsoft.appcenter.assets.AssetsConstants;
 import com.microsoft.appcenter.assets.AssetsStatusReportIdentifier;
 import com.microsoft.appcenter.assets.datacontracts.AssetsDeploymentStatusReport;
@@ -30,6 +31,11 @@ public class SettingsManager {
      * Instance of {@link AssetsUtils} to work with.
      */
     private AssetsUtils mAssetsUtils;
+
+    /**
+     * Instance of {@link AssetsConfiguration} to work with.
+     */
+    private AssetsConfiguration mAssetsConfiguration;
 
     /**
      * Key for getting/storing info about failed Assets updates.
@@ -61,10 +67,21 @@ public class SettingsManager {
      *
      * @param applicationContext current application context.
      * @param assetsUtils      instance of {@link AssetsUtils} to work with.
+     * @param assetsConfiguration instance of {@link AssetsConfiguration} to work with.
      */
-    public SettingsManager(Context applicationContext, AssetsUtils assetsUtils) {
+    public SettingsManager(Context applicationContext, AssetsUtils assetsUtils, AssetsConfiguration assetsConfiguration) {
         mSettings = applicationContext.getSharedPreferences(AssetsConstants.ASSETS_PREFERENCES, 0);
+        mAssetsConfiguration = assetsConfiguration;
         mAssetsUtils = assetsUtils;
+    }
+
+    /**
+     * Returns app-specific prefix for preferences keys.
+     *
+     * @return preference key prefix to get app specific preferences
+     */
+    private String getAppSpecificPrefix() {
+        return mAssetsConfiguration != null ? mAssetsConfiguration.getAppName() + "-" : "";
     }
 
     /**
@@ -75,7 +92,7 @@ public class SettingsManager {
      * @throws AssetsMalformedDataException error thrown when actual data is broken (i .e. different from the expected).
      */
     public ArrayList<AssetsPackage> getFailedUpdates() throws AssetsMalformedDataException {
-        String failedUpdatesString = mSettings.getString(FAILED_UPDATES_KEY, null);
+        String failedUpdatesString = mSettings.getString(getAppSpecificPrefix() + FAILED_UPDATES_KEY, null);
         if (failedUpdatesString == null) {
             return new ArrayList<>();
         }
@@ -85,7 +102,7 @@ public class SettingsManager {
 
             /* Unrecognized data format, clear and replace with expected format. */
             List<AssetsLocalPackage> emptyArray = new ArrayList<>();
-            mSettings.edit().putString(FAILED_UPDATES_KEY, mAssetsUtils.convertObjectToJsonString(emptyArray)).apply();
+            mSettings.edit().putString(getAppSpecificPrefix() + FAILED_UPDATES_KEY, mAssetsUtils.convertObjectToJsonString(emptyArray)).apply();
             throw new AssetsMalformedDataException("Unable to parse failed updates metadata " + failedUpdatesString + " stored in SharedPreferences", e);
         }
     }
@@ -97,7 +114,7 @@ public class SettingsManager {
      * @throws AssetsMalformedDataException error thrown when actual data is broken (i .e. different from the expected).
      */
     public AssetsPendingUpdate getPendingUpdate() throws AssetsMalformedDataException {
-        String pendingUpdateString = mSettings.getString(PENDING_UPDATE_KEY, null);
+        String pendingUpdateString = mSettings.getString(getAppSpecificPrefix() + PENDING_UPDATE_KEY, null);
         if (pendingUpdateString == null) {
             return null;
         }
@@ -145,14 +162,14 @@ public class SettingsManager {
      * Removes information about failed updates.
      */
     public void removeFailedUpdates() {
-        mSettings.edit().remove(FAILED_UPDATES_KEY).apply();
+        mSettings.edit().remove(getAppSpecificPrefix() + FAILED_UPDATES_KEY).apply();
     }
 
     /**
      * Removes information about the pending update.
      */
     public void removePendingUpdate() {
-        mSettings.edit().remove(PENDING_UPDATE_KEY).apply();
+        mSettings.edit().remove(getAppSpecificPrefix() + PENDING_UPDATE_KEY).apply();
     }
 
     /**
@@ -165,7 +182,7 @@ public class SettingsManager {
         ArrayList<AssetsPackage> failedUpdates = getFailedUpdates();
         failedUpdates.add(failedPackage);
         String failedUpdatesString = mAssetsUtils.convertObjectToJsonString(failedUpdates);
-        mSettings.edit().putString(FAILED_UPDATES_KEY, failedUpdatesString).apply();
+        mSettings.edit().putString(getAppSpecificPrefix() + FAILED_UPDATES_KEY, failedUpdatesString).apply();
     }
 
     /**
@@ -174,7 +191,7 @@ public class SettingsManager {
      * @param pendingUpdate instance of the {@link AssetsPendingUpdate}.
      */
     public void savePendingUpdate(AssetsPendingUpdate pendingUpdate) {
-        mSettings.edit().putString(PENDING_UPDATE_KEY, mAssetsUtils.convertObjectToJsonString(pendingUpdate)).apply();
+        mSettings.edit().putString(getAppSpecificPrefix() + PENDING_UPDATE_KEY, mAssetsUtils.convertObjectToJsonString(pendingUpdate)).apply();
     }
 
     /**
@@ -184,7 +201,7 @@ public class SettingsManager {
      * @throws JSONException if there was error of deserialization of report from json document.
      */
     public AssetsDeploymentStatusReport getStatusReportSavedForRetry() throws JSONException {
-        String retryStatusReportString = mSettings.getString(RETRY_DEPLOYMENT_REPORT_KEY, null);
+        String retryStatusReportString = mSettings.getString(getAppSpecificPrefix() + RETRY_DEPLOYMENT_REPORT_KEY, null);
         if (retryStatusReportString != null) {
             JSONObject retryStatusReport = new JSONObject(retryStatusReportString);
             return mAssetsUtils.convertJsonObjectToObject(retryStatusReport, AssetsDeploymentStatusReport.class);
@@ -200,14 +217,14 @@ public class SettingsManager {
      */
     public void saveStatusReportForRetry(AssetsDeploymentStatusReport statusReport) throws JSONException {
         JSONObject statusReportJSON = mAssetsUtils.convertObjectToJsonObject(statusReport);
-        mSettings.edit().putString(RETRY_DEPLOYMENT_REPORT_KEY, statusReportJSON.toString()).apply();
+        mSettings.edit().putString(getAppSpecificPrefix() + RETRY_DEPLOYMENT_REPORT_KEY, statusReportJSON.toString()).apply();
     }
 
     /**
      * Remove status report that was saved for retry of it's sending.
      */
     public void removeStatusReportSavedForRetry() {
-        mSettings.edit().remove(RETRY_DEPLOYMENT_REPORT_KEY).apply();
+        mSettings.edit().remove(getAppSpecificPrefix() + RETRY_DEPLOYMENT_REPORT_KEY).apply();
     }
 
     /**
@@ -216,7 +233,7 @@ public class SettingsManager {
      * @return previously saved status report identifier.
      */
     public AssetsStatusReportIdentifier getPreviousStatusReportIdentifier() {
-        String identifierString = mSettings.getString(LAST_DEPLOYMENT_REPORT_KEY, null);
+        String identifierString = mSettings.getString(getAppSpecificPrefix() + LAST_DEPLOYMENT_REPORT_KEY, null);
         if (identifierString != null) {
             return AssetsStatusReportIdentifier.fromString(identifierString);
         }
@@ -229,7 +246,7 @@ public class SettingsManager {
      * @param identifier identifier of already sent status report.
      */
     public void saveIdentifierOfReportedStatus(AssetsStatusReportIdentifier identifier) {
-        mSettings.edit().putString(LAST_DEPLOYMENT_REPORT_KEY, identifier.toString()).apply();
+        mSettings.edit().putString(getAppSpecificPrefix() + LAST_DEPLOYMENT_REPORT_KEY, identifier.toString()).apply();
     }
 
 }

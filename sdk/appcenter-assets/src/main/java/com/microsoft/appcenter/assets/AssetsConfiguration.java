@@ -34,6 +34,62 @@ public class AssetsConfiguration {
     private String packageHash;
 
     /**
+     * Application name, if provided.
+     */
+    private String appName;
+
+    /**
+     * Gets the value of application name and returns it.
+     *
+     * @return app name.
+     */
+    public String getAppName() {
+        return appName;
+    }
+
+    /**
+     * Sets the application name.
+     *
+     * @param appName new value of app name.
+     */
+    public AssetsConfiguration setAppName(String appName) throws AssetsIllegalArgumentException {
+        if (appName != null) {
+            this.appName = appName;
+        } else {
+            throw new AssetsIllegalArgumentException(this.getClass().getName(), "appName");
+        }
+        return this;
+    }
+
+    /**
+     * Gets the value of baseDirectory and returns it.
+     *
+     * @return baseDirectory.
+     */
+    public String getBaseDirectory() {
+        return baseDirectory;
+    }
+
+    /**
+     * Sets the baseDirectory.
+     *
+     * @param baseDirectory new value.
+     */
+    public AssetsConfiguration setBaseDirectory(String baseDirectory) throws AssetsIllegalArgumentException {
+        if (baseDirectory != null) {
+            this.baseDirectory = baseDirectory;
+        } else {
+            throw new AssetsIllegalArgumentException(this.getClass().getName(), "baseDirectory");
+        }
+        return this;
+    }
+
+    /**
+     * Assets base directory to be set instead of base files dir (<code>Context.getFilesDir()</code> by default).
+     */
+    private String baseDirectory;
+
+    /**
      * Get the appVersion value.
      *
      * @return appVersion value.

@@ -45,6 +45,24 @@ public class AssetsBuilder {
     private Assets mParentInstance;
 
     /**
+     * App name for use when utilizing multiple CodePush instances to differentiate file locations.
+     * If not provided, defaults to {@link AssetsConstants#ASSETS_DEFAULT_APP_NAME}.
+     */
+    private String mAppName;
+
+    /**
+     * Semantic version for app for use when getting updates.
+     * If not provided, defaults to <code>versionName</code> field from <code>build.gradle</code>.
+     */
+    private String mAppVersion;
+
+    /**
+     * Base directory for CodePush files.
+     * If not provided, defaults to /data/data/<package>/files ({@link Context#getFilesDir()}).
+     */
+    private String mBaseDirectory;
+
+    /**
      * Creates a builder with initial parameters.
      *
      * @param deploymentKey application deployment key.
@@ -64,6 +82,39 @@ public class AssetsBuilder {
      */
     public AssetsBuilder setIsDebugMode(boolean isDebugMode) {
         mIsDebugMode = isDebugMode;
+        return this;
+    }
+
+    /**
+     * Sets name of application.
+     *
+     * @param appName name of application.
+     * @return instance of {@link AssetsBuilder}.
+     */
+    public AssetsBuilder setAppName(String appName) {
+        mAppName = appName;
+        return this;
+    }
+
+    /**
+     * Sets version of application.
+     *
+     * @param appVersion semantic version of application.
+     * @return instance of {@link AssetsBuilder}.
+     */
+    public AssetsBuilder setAppVersion(String appVersion) {
+        mAppVersion = appVersion;
+        return this;
+    }
+
+    /**
+     * Sets base directory for CodePush files.
+     *
+     * @param baseDirectory base directory for CodePush instance.
+     * @return instance of {@link AssetsBuilder}.
+     */
+    public AssetsBuilder setBaseDir(String baseDirectory) {
+        mBaseDirectory = baseDirectory;
         return this;
     }
 
@@ -113,7 +164,10 @@ public class AssetsBuilder {
                 this.mIsDebugMode,
                 this.mServerUrl,
                 this.mPublicKeyResourceDescriptor,
-                this.mUpdateSubFolder
+                this.mUpdateSubFolder,
+                this.mAppVersion,
+                this.mAppName,
+                this.mBaseDirectory
         );
     }
 }
