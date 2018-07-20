@@ -12,7 +12,8 @@ import com.microsoft.appcenter.http.ServiceCallback;
 import com.microsoft.appcenter.utils.AppCenterLog;
 import com.microsoft.appcenter.utils.NetworkStateHelper;
 
-import org.junit.Assert;
+import junit.framework.Assert;
+
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -140,7 +141,7 @@ public class DistributeHttpTest extends AbstractDistributeTest {
 
         /* Configure mock HTTP to get an instance of IngestionCallTemplate. */
         Distribute.getInstance().onStarting(mAppCenterHandler);
-        Distribute.getInstance().onStarted(mContext, mock(Channel.class), appSecret, null, true);
+        Distribute.getInstance().onStarted(mContext, appSecret, null, mock(Channel.class));
         final ServiceCall call = mock(ServiceCall.class);
         final AtomicReference<HttpClient.CallTemplate> callTemplate = new AtomicReference<>();
         mockStatic(NetworkStateHelper.class);
@@ -150,7 +151,7 @@ public class DistributeHttpTest extends AbstractDistributeTest {
         when(httpClient.callAsync(anyString(), anyString(), anyMapOf(String.class, String.class), any(HttpClient.CallTemplate.class), any(ServiceCallback.class))).then(new Answer<ServiceCall>() {
 
             @Override
-            public ServiceCall answer(InvocationOnMock invocation) {
+            public ServiceCall answer(InvocationOnMock invocation) throws Throwable {
                 callTemplate.set((HttpClient.CallTemplate) invocation.getArguments()[3]);
                 return call;
             }

@@ -166,7 +166,7 @@ public class PushTest {
 
     private void start(Push push, Channel channel) {
         push.onStarting(mAppCenterHandler);
-        push.onStarted(mContext, channel, DUMMY_APP_SECRET, null, true);
+        push.onStarted(contextMock, DUMMY_APP_SECRET, null, channel);
     }
 
     @Test

@@ -2,15 +2,18 @@ package com.microsoft.appcenter.ingestion.models.json;
 
 import android.support.annotation.NonNull;
 
+import com.microsoft.appcenter.AppCenter;
 import com.microsoft.appcenter.ingestion.models.Log;
 import com.microsoft.appcenter.ingestion.models.LogContainer;
 import com.microsoft.appcenter.ingestion.models.one.CommonSchemaLog;
+import com.microsoft.appcenter.utils.AppCenterLog;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -68,8 +71,21 @@ public class DefaultLogSerializer implements LogSerializer {
     @Override
     public String serializeContainer(@NonNull LogContainer logContainer) throws JSONException {
 
-        /* Init JSON serializer. */
-        JSONStringer writer = new JSONStringer();
+        /* Init JSON serializer, in verbose: try to make it pretty. */
+        JSONStringer writer = null;
+        if (AppCenterLog.getLogLevel() <= android.util.Log.VERBOSE) {
+            try {
+                @SuppressWarnings("JavaReflectionMemberAccess")
+                Constructor<JSONStringer> constructor = JSONStringer.class.getDeclaredConstructor(int.class);
+                constructor.setAccessible(true);
+                writer = constructor.newInstance(2);
+            } catch (Exception e) {
+                AppCenterLog.error(AppCenter.LOG_TAG, "Failed to setup pretty json, falling back to default one", e);
+            }
+        }
+        if (writer == null) {
+            writer = new JSONStringer();
+        }
 
         /* Start writing JSON. */
         writer.object();

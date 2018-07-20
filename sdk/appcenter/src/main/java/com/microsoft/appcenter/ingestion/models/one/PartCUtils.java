@@ -1,9 +1,13 @@
 package com.microsoft.appcenter.ingestion.models.one;
 
+import com.microsoft.appcenter.utils.AppCenterLog;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Map;
+
+import static com.microsoft.appcenter.utils.AppCenterLog.LOG_TAG;
 
 /**
  * Populate Part C properties.
@@ -15,7 +19,6 @@ public class PartCUtils {
      *
      * @param properties custom properties.
      * @param dest       destination common schema log.
-     * @throws IllegalArgumentException if properties are not valid.
      */
     public static void addPartCFromLog(Map<String, String> properties, CommonSchemaLog dest) {
         if (properties == null) {
@@ -28,25 +31,17 @@ public class PartCUtils {
             dest.setData(data);
             for (Map.Entry<String, String> entry : properties.entrySet()) {
 
-                /* Validate key not null. */
-                String key = entry.getKey();
-                if (key == null) {
-                    throw new IllegalArgumentException("Property key cannot be null.");
-                }
-
-                /* Validate value not null. */
-                String value = entry.getValue();
-                if (value == null) {
-                    throw new IllegalArgumentException("Property value cannot be null.");
-                }
-
                 /* Validate key is not Part B. */
+                String key = entry.getKey();
                 if (Data.BASE_DATA.equals(key) || Data.BASE_DATA_TYPE.equals(key)) {
-                    throw new IllegalArgumentException("Property key '" + key + "' is reserved.");
+                    AppCenterLog.warn(LOG_TAG, "Cannot use '" + key + "' in properties, skipping that property.");
+                    continue;
                 }
+
+                /* TODO validate properties here, skip invalid ones and log a warning. */
 
                 /* Split property name by dot. */
-                String[] keys = key.split("\\.", -1);
+                String[] keys = key.split("\\.");
                 int lastIndex = keys.length - 1;
                 JSONObject destProperties = data.getProperties();
                 for (int i = 0; i < lastIndex; i++) {
@@ -54,7 +49,7 @@ public class PartCUtils {
                     destProperties.put(keys[i], subObject);
                     destProperties = subObject;
                 }
-                destProperties.put(keys[lastIndex], value);
+                destProperties.put(keys[lastIndex], entry.getValue());
             }
         } catch (JSONException ignore) {
 

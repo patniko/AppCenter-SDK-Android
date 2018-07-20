@@ -69,7 +69,7 @@ public class OsExtension implements Model {
     }
 
     @Override
-    public void read(JSONObject object) {
+    public void read(JSONObject object) throws JSONException {
         setName(object.optString(NAME, null));
         setVer(object.optString(VER, null));
     }

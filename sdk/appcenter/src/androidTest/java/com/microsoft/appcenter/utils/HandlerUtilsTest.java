@@ -14,7 +14,7 @@ public class HandlerUtilsTest {
 
     @Test
     public void init() {
-        new HandlerUtils();
+        assertNotNull(new HandlerUtils());
     }
 
     @Test

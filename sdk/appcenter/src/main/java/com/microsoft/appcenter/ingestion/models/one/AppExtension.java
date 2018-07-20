@@ -83,7 +83,6 @@ public class AppExtension implements Model {
      *
      * @return application locale.
      */
-    @SuppressWarnings("WeakerAccess")
     public String getLocale() {
         return locale;
     }
@@ -98,7 +97,7 @@ public class AppExtension implements Model {
     }
 
     @Override
-    public void read(JSONObject object) {
+    public void read(JSONObject object) throws JSONException {
         setId(object.optString(ID, null));
         setVer(object.optString(VER, null));
         setLocale(object.optString(LOCALE, null));

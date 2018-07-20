@@ -62,8 +62,6 @@ public class DeviceInfoHelper {
         /* Carrier info. */
         try {
             TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-
-            @SuppressWarnings("ConstantConditions")
             String networkCountryIso = telephonyManager.getNetworkCountryIso();
             if (!TextUtils.isEmpty(networkCountryIso)) {
                 device.setCarrierCountry(networkCountryIso);
@@ -130,8 +128,6 @@ public class DeviceInfoHelper {
         /* Guess resolution based on the natural device orientation */
         int screenWidth;
         int screenHeight;
-
-        //noinspection ConstantConditions
         Display defaultDisplay = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE))
                 .getDefaultDisplay();
         Point size = new Point();
@@ -147,7 +143,7 @@ public class DeviceInfoHelper {
                 screenHeight = size.y;
         }
 
-        /* Serialize screen resolution */
+         /* Serialize screen resolution */
         return screenWidth + "x" + screenHeight;
     }
 

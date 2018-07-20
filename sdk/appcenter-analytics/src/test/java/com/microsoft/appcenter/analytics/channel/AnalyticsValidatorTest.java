@@ -8,7 +8,7 @@ import static org.junit.Assert.assertFalse;
 
 public class AnalyticsValidatorTest {
 
-    private final AnalyticsValidator mAnalyticsValidator = new AnalyticsValidator();
+    private AnalyticsValidator mAnalyticsValidator = new AnalyticsValidator();
 
     @Test
     public void shouldFilterInvalidType() {

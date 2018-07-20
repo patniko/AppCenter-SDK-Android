@@ -69,7 +69,7 @@ public class ProtocolExtension implements Model {
     }
 
     @Override
-    public void read(JSONObject object) {
+    public void read(JSONObject object) throws JSONException {
         setDevMake(object.optString(DEV_MAKE, null));
         setDevModel(object.optString(DEV_MODEL, null));
     }
