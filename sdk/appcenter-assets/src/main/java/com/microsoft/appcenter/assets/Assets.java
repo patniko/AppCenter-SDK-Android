@@ -146,6 +146,9 @@ public class Assets extends AbstractAppCenterService {
          * @param serverUrl                   CodePush server url.
          * @param publicKeyResourceDescriptor public-key related resource descriptor.
          * @param updateEntryPoint            path to the update contents inside of the package.
+         * @param appName            application name.
+         * @param appVersion         application version to be overridden.
+         * @param baseDirectory      directory to be set as base instead of files dir, or <code>null</code>.
          * @throws AssetsInitializeException initialization exception.
          */
         AssetsDeploymentInstance(
@@ -154,7 +157,10 @@ public class Assets extends AbstractAppCenterService {
                 boolean isDebugMode,
                 @Nullable String serverUrl,
                 @Nullable Integer publicKeyResourceDescriptor,
-                @Nullable String updateEntryPoint
+                @Nullable String updateEntryPoint,
+                @Nullable  String appVersion,
+                @Nullable String appName,
+                @Nullable String baseDirectory
         ) throws AssetsInitializeException {
             try {
                 mAndroidCore = new AssetsAndroidCore(
@@ -164,7 +170,10 @@ public class Assets extends AbstractAppCenterService {
                         serverUrl,
                         new AssetsAndroidPublicKeyProvider(publicKeyResourceDescriptor, context),
                         new AssetsAndroidEntryPointProvider(updateEntryPoint),
-                        AndroidUtils.getInstance());
+                        AndroidUtils.getInstance(),
+                        appVersion,
+                        appName,
+                        baseDirectory);
             } catch (AssetsInitializeException e) {
                 AppCenterLog.error(Assets.LOG_TAG, e.getMessage());
                 throw e;

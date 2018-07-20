@@ -91,4 +91,10 @@ public final class AssetsConstants {
      * File name for jwt file of signed CodePush update.
      */
     public static final String BUNDLE_JWT_FILE_NAME = ".codepushrelease";
+
+    /**
+     * Default app name if not provided when building Assets instance.
+     */
+    public static final String ASSETS_DEFAULT_APP_NAME = "Assets";
+
 }

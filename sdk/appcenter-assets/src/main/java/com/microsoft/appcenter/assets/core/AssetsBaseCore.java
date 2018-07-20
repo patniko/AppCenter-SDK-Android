@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 
 import com.microsoft.appcenter.assets.Assets;
 import com.microsoft.appcenter.assets.AssetsConfiguration;
+import com.microsoft.appcenter.assets.AssetsConstants;
 import com.microsoft.appcenter.assets.apirequests.ApiHttpRequest;
 import com.microsoft.appcenter.assets.apirequests.DownloadPackageTask;
 import com.microsoft.appcenter.assets.datacontracts.AssetsDeploymentStatusReport;
@@ -100,6 +101,18 @@ public abstract class AssetsBaseCore {
     protected String mDeploymentKey;
 
     /**
+     * Assets base directory.
+     */
+    @SuppressWarnings("WeakerAccess")
+    protected String mBaseDirectory;
+
+    /**
+     * Current app name.
+     */
+    @SuppressWarnings("WeakerAccess")
+    protected String mAppName;
+
+    /**
      * CodePush server URL.
      */
     @SuppressWarnings("WeakerAccess")
@@ -180,6 +193,9 @@ public abstract class AssetsBaseCore {
      * @param publicKeyProvider  instance of {@link AssetsPublicKeyProvider}.
      * @param entryPointProvider instance of {@link AssetsEntryPointProvider}.
      * @param platformUtils      instance of {@link AssetsPlatformUtils}.
+     * @param appName            application name.
+     * @param appVersion         application version to be overridden.
+     * @param baseDirectory      directory to be set as base instead of files dir, or <code>null</code>.
      * @throws AssetsInitializeException error occurred during the initialization.
      */
     protected AssetsBaseCore(
@@ -189,22 +205,33 @@ public abstract class AssetsBaseCore {
             String serverUrl,
             AssetsPublicKeyProvider publicKeyProvider,
             AssetsEntryPointProvider entryPointProvider,
-            AssetsPlatformUtils platformUtils
+            AssetsPlatformUtils platformUtils,
+            String appVersion,
+            String appName,
+            String baseDirectory
     ) throws AssetsInitializeException {
 
         /* Initialize configuration. */
         mDeploymentKey = deploymentKey;
         mContext = context.getApplicationContext();
+        mBaseDirectory = baseDirectory != null ? baseDirectory : mContext.getFilesDir().getAbsolutePath();
         mIsDebugMode = isDebugMode;
         if (serverUrl != null) {
             mServerUrl = serverUrl;
         }
-        try {
-            mPublicKey = publicKeyProvider.getPublicKey();
-            PackageInfo pInfo = mContext.getPackageManager().getPackageInfo(mContext.getPackageName(), 0);
-            mAppVersion = pInfo.versionName;
-        } catch (PackageManager.NameNotFoundException | AssetsInvalidPublicKeyException e) {
-            throw new AssetsInitializeException("Unable to get package info for " + mContext.getPackageName(), e);
+        if (appName != null) {
+            mAppName = appName;
+        }
+        if (appVersion != null) {
+            mAppVersion = appVersion;
+        } else {
+            try {
+                mPublicKey = publicKeyProvider.getPublicKey();
+                PackageInfo pInfo = mContext.getPackageManager().getPackageInfo(mContext.getPackageName(), 0);
+                mAppVersion = pInfo.versionName;
+            } catch (PackageManager.NameNotFoundException | AssetsInvalidPublicKeyException e) {
+                throw new AssetsInitializeException("Unable to get package info for " + mContext.getPackageName(), e);
+            }
         }
 
         /* Initialize utilities. */
@@ -214,9 +241,15 @@ public abstract class AssetsBaseCore {
         mUtilities = new AssetsUtilities(utils, fileUtils, updateUtils, platformUtils);
 
         /* Initialize managers. */
-        String documentsDirectory = mContext.getFilesDir().getAbsolutePath();
-        AssetsUpdateManager updateManager = new AssetsUpdateManager(documentsDirectory, platformUtils, fileUtils, utils, updateUtils);
-        final SettingsManager settingsManager = new SettingsManager(mContext, utils);
+        AssetsConfiguration configuration;
+        try {
+            configuration = getNativeConfiguration();
+        } catch (AssetsNativeApiCallException e) {
+            throw new AssetsInitializeException("Unable to get native configuration for " + mContext.getPackageName(), e);
+        }
+        AssetsUpdateManager updateManager = new AssetsUpdateManager(mBaseDirectory, platformUtils, fileUtils, utils, updateUtils, configuration);
+        final SettingsManager settingsManager = new SettingsManager(mContext, utils, configuration);
+
         AssetsTelemetryManager telemetryManager = new AssetsTelemetryManager(settingsManager);
         AssetsRestartManager restartManager = new AssetsRestartManager(new AssetsRestartHandler() {
             @Override
@@ -303,10 +336,11 @@ public abstract class AssetsBaseCore {
     public AssetsConfiguration getNativeConfiguration() throws AssetsNativeApiCallException {
         AssetsConfiguration configuration = new AssetsConfiguration();
         try {
+            configuration.setAppName(mAppName != null ? mAppName : AssetsConstants.ASSETS_DEFAULT_APP_NAME);
             configuration.setAppVersion(mAppVersion);
-
             configuration.setClientUniqueId(Settings.Secure.getString(mContext.getContentResolver(), Settings.Secure.ANDROID_ID));
             configuration.setDeploymentKey(mDeploymentKey);
+            configuration.setBaseDirectory(mBaseDirectory);
             configuration.setServerUrl(mServerUrl);
             configuration.setPackageHash(mUtilities.mUpdateUtils.getHashForBinaryContents(mContext, mIsDebugMode));
         } catch (AssetsIllegalArgumentException | AssetsMalformedDataException e) {
@@ -756,7 +790,7 @@ public abstract class AssetsBaseCore {
                 break;
             }
             case UPDATE_INSTALLED: {
-                switch(mState.mCurrentInstallModeInProgress) {
+                switch (mState.mCurrentInstallModeInProgress) {
                     case ON_NEXT_RESTART:
                         AppCenterLog.info(LOG_TAG, "Update is installed and will be run on the next app restart.");
                         break;

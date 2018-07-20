@@ -1,6 +1,7 @@
 package com.microsoft.appcenter.assets.managers;
 
 import com.microsoft.appcenter.assets.Assets;
+import com.microsoft.appcenter.assets.AssetsConfiguration;
 import com.microsoft.appcenter.assets.AssetsConstants;
 import com.microsoft.appcenter.assets.apirequests.ApiHttpRequest;
 import com.microsoft.appcenter.assets.datacontracts.AssetsDownloadPackageResult;
@@ -62,6 +63,11 @@ public class AssetsUpdateManager {
     private String mDocumentsDirectory;
 
     /**
+     * Assets configuration for instance.
+     */
+    private AssetsConfiguration mAssetsConfiguration;
+
+    /**
      * Creates instance of AssetsUpdateManager.
      *
      * @param documentsDirectory  path for storing files.
@@ -69,13 +75,15 @@ public class AssetsUpdateManager {
      * @param fileUtils           instance of {@link FileUtils} to work with.
      * @param assetsUtils       instance of {@link AssetsUtils} to work with.
      * @param assetsUpdateUtils instance of {@link AssetsUpdateUtils} to work with.
+     * @param assetsConfiguration instance of {@link AssetsConfiguration} to work with.
      */
-    public AssetsUpdateManager(String documentsDirectory, AssetsPlatformUtils platformUtils, FileUtils fileUtils, AssetsUtils assetsUtils, AssetsUpdateUtils assetsUpdateUtils) {
+    public AssetsUpdateManager(String documentsDirectory, AssetsPlatformUtils platformUtils, FileUtils fileUtils, AssetsUtils assetsUtils, AssetsUpdateUtils assetsUpdateUtils, AssetsConfiguration assetsConfiguration) {
         mPlatformUtils = platformUtils;
         mFileUtils = fileUtils;
         mAssetsUpdateUtils = assetsUpdateUtils;
         mAssetsUtils = assetsUtils;
         mDocumentsDirectory = documentsDirectory;
+        mAssetsConfiguration = assetsConfiguration;
     }
 
     /**
@@ -111,7 +119,7 @@ public class AssetsUpdateManager {
      * @return application-specific folder.
      */
     private String getAssetsPath() {
-        String assetsPath = mFileUtils.appendPathComponent(getDocumentsDirectory(), AssetsConstants.ASSETS_FOLDER_PREFIX);
+        String assetsPath = mFileUtils.appendPathComponent(getDocumentsDirectory(), mAssetsConfiguration.getAppName());
         if (sTestConfigurationFlag) {
             assetsPath = mFileUtils.appendPathComponent(assetsPath, "TestPackages");
         }
@@ -431,7 +439,18 @@ public class AssetsUpdateManager {
     public void unzipPackage(File downloadFile) throws AssetsUnzipException {
         String unzippedFolderPath = getUnzippedFolderPath();
         try {
-            mFileUtils.unzipFile(downloadFile, new File(unzippedFolderPath));
+            File unzippedFolder = new File(unzippedFolderPath);
+            mFileUtils.unzipFile(downloadFile, unzippedFolder);
+            mFileUtils.deleteFileOrFolderSilently(downloadFile);
+            // Rename app package directory to match configured app name
+            for (File file : unzippedFolder.listFiles()) {
+                if (file.isDirectory()) {
+                    if (!file.renameTo(new File(unzippedFolder, mAssetsConfiguration.getAppName()))) {
+                        throw new IOException("Unable to rename package file.");
+                    }
+                    return;
+                }
+            }
             mFileUtils.deleteFileOrFolderSilently(downloadFile);
         } catch (IOException e) {
             throw new AssetsUnzipException(e);
