@@ -1,5 +1,6 @@
 package com.microsoft.appcenter.sasquatch.activities;
 
+
 import android.support.test.espresso.IdlingRegistry;
 import android.support.test.rule.ActivityTestRule;
 

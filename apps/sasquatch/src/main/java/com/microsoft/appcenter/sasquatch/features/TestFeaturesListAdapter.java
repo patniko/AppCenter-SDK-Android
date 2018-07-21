@@ -8,11 +8,11 @@ import android.widget.TextView;
 
 import com.microsoft.appcenter.sasquatch.R;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class TestFeaturesListAdapter extends BaseAdapter {
-    private List<TestFeatures.TestFeatureModel> mList = new ArrayList<>();
+
+    private final List<TestFeatures.TestFeatureModel> mList;
 
     public TestFeaturesListAdapter(List<TestFeatures.TestFeatureModel> list) {
         mList = list;
@@ -39,7 +39,6 @@ public class TestFeaturesListAdapter extends BaseAdapter {
         /* Set title and description to the view. */
         View rowView = null;
         Object item = getItem(position);
-
         if (item instanceof TestFeatures.TestFeatureTitle) {
             if (convertView != null && convertView.getTag() != null && ((ViewHolder) convertView.getTag()).mClass == TestFeatures.TestFeatureTitle.class) {
                 ViewHolder holder = (ViewHolder) convertView.getTag();
@@ -71,8 +70,11 @@ public class TestFeaturesListAdapter extends BaseAdapter {
     }
 
     private static class ViewHolder {
+
         private final Class mClass;
+
         private final TextView mTextView1;
+
         private final TextView mTextView2;
 
         private ViewHolder(Class clazz, TextView view) {
