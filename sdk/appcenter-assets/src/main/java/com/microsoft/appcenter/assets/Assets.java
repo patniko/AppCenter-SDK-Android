@@ -117,14 +117,36 @@ public class Assets extends AbstractAppCenterService {
      * @return instance of {@link AssetsBuilder}.
      */
     public static AppCenterFuture<AssetsBuilder> getBuilder(String deploymentKey) {
-        mDeploymentKey = deploymentKey;
-        builderFuture = new DefaultAppCenterFuture<>();
+        if (sInstance.isInstanceEnabled()) {
+            mDeploymentKey = deploymentKey;
+            builderFuture = new DefaultAppCenterFuture<>();
 
-        /* If the service is already started, resolve right away. */
-        if (mContext != null) {
-            builderFuture.complete(new AssetsBuilder(mDeploymentKey, mContext, getInstance()));
+            /* If the service is already started, resolve right away. */
+            if (mContext != null) {
+                builderFuture.complete(new AssetsBuilder(mDeploymentKey, mContext, getInstance()));
+            }
         }
         return builderFuture;
+    }
+
+    /**
+     * Check whether Assets service is enabled or not.
+     *
+     * @return future with result being <code>true</code> if enabled, <code>false</code> otherwise.
+     * @see AppCenterFuture
+     */
+    public static AppCenterFuture<Boolean> isEnabled() {
+        return getInstance().isInstanceEnabledAsync();
+    }
+
+    /**
+     * Enable or disable Assets service.
+     *
+     * @param enabled <code>true</code> to enable, <code>false</code> to disable.
+     * @return future with null result to monitor when the operation completes.
+     */
+    public static AppCenterFuture<Void> setEnabled(boolean enabled) {
+        return getInstance().setInstanceEnabledAsync(enabled);
     }
 
     /**
@@ -140,15 +162,15 @@ public class Assets extends AbstractAppCenterService {
         /**
          * Creates instance of {@link AssetsDeploymentInstance}.
          *
-         * @param deploymentKey               application deployment key.
-         * @param context                     application context.
-         * @param isDebugMode                 whether the application is running in debug mode.
-         * @param serverUrl                   CodePush server url.
-         * @param publicKeyResourceDescriptor public-key related resource descriptor.
-         * @param updateEntryPoint            path to the update contents inside of the package.
-         * @param appName            application name.
-         * @param appVersion         application version to be overridden.
-         * @param baseDirectory      directory to be set as base instead of files dir, or <code>null</code>.
+         * @param deploymentKey    application deployment key.
+         * @param context          application context.
+         * @param isDebugMode      whether the application is running in debug mode.
+         * @param serverUrl        CodePush server url.
+         * @param publicKey        public key for signed updates.
+         * @param updateEntryPoint path to the update contents inside of the package.
+         * @param appName          application name.
+         * @param appVersion       application version to be overridden.
+         * @param baseDirectory    directory to be set as base instead of files dir, or <code>null</code>.
          * @throws AssetsInitializeException initialization exception.
          */
         AssetsDeploymentInstance(
@@ -156,9 +178,9 @@ public class Assets extends AbstractAppCenterService {
                 @NonNull Context context,
                 boolean isDebugMode,
                 @Nullable String serverUrl,
-                @Nullable Integer publicKeyResourceDescriptor,
+                @Nullable String publicKey,
                 @Nullable String updateEntryPoint,
-                @Nullable  String appVersion,
+                @Nullable String appVersion,
                 @Nullable String appName,
                 @Nullable String baseDirectory
         ) throws AssetsInitializeException {
@@ -168,7 +190,7 @@ public class Assets extends AbstractAppCenterService {
                         context,
                         isDebugMode,
                         serverUrl,
-                        new AssetsAndroidPublicKeyProvider(publicKeyResourceDescriptor, context),
+                        publicKey,
                         new AssetsAndroidEntryPointProvider(updateEntryPoint),
                         AndroidUtils.getInstance(),
                         appVersion,

@@ -41,6 +41,12 @@
             android:name=".activities.SettingsActivity"
             android:label="@string/settings"/>
         <activity
+            android:name=".activities.AssetsActivity"
+            android:label="@string/title_assets"/>
+        <activity
+            android:name=".activities.AssetsActivitySync"
+            android:label="@string/title_sync"/>
+        <activity
             android:name=".activities.ManagedErrorActivity"
             android:label="@string/title_error"/>
         <activity
@@ -50,10 +56,10 @@
         <!-- Set default notification icon and color. -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@drawable/ic_appcenter_logo" />
+            android:resource="@drawable/ic_appcenter_logo"/>
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
-            android:resource="@color/appcenter_logo" />
+            android:resource="@color/appcenter_logo"/>
     </application>
 
 </manifest>

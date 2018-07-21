@@ -19,6 +19,7 @@ import com.microsoft.appcenter.AppCenter;
 import com.microsoft.appcenter.analytics.Analytics;
 import com.microsoft.appcenter.analytics.AnalyticsPrivateHelper;
 import com.microsoft.appcenter.analytics.channel.AnalyticsListener;
+import com.microsoft.appcenter.assets.Assets;
 import com.microsoft.appcenter.crashes.Crashes;
 import com.microsoft.appcenter.crashes.CrashesListener;
 import com.microsoft.appcenter.crashes.CrashesPrivateHelper;
@@ -42,6 +43,16 @@ public class MainActivity extends AppCompatActivity {
     public static final String LOG_TAG = "AppCenterSasquatch";
 
     static final String APP_SECRET_KEY = "appSecret";
+
+    static final String DEPLOYMENT_KEY_KEY = "appSecret";
+
+    static final String ASSETS_APP_NAME_KEY = "assetsAppName";
+
+    static final String ASSETS_APP_VERSION_KEY = "assetsAppVersion";
+
+    static final String ASSETS_PUBLIC_KEY = "assetsPublicKey";
+
+    static final String ASSETS_SERVER_URL = "assetsServerUrl";
 
     static final String TARGET_KEY = "target";
 
@@ -251,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
                 appIdArg = String.format("appsecret=%s;target=%s", appId, targetId);
                 break;
         }
-        AppCenter.start(getApplication(), appIdArg, Analytics.class, Crashes.class, Distribute.class, Push.class);
+        AppCenter.start(getApplication(), appIdArg, Analytics.class, Crashes.class, Distribute.class, Push.class, Assets.class);
     }
 
     public enum StartType {

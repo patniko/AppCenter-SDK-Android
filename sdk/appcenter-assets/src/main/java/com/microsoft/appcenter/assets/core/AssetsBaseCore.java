@@ -30,7 +30,6 @@ import com.microsoft.appcenter.assets.exceptions.AssetsGetPackageException;
 import com.microsoft.appcenter.assets.exceptions.AssetsIllegalArgumentException;
 import com.microsoft.appcenter.assets.exceptions.AssetsInitializeException;
 import com.microsoft.appcenter.assets.exceptions.AssetsInstallException;
-import com.microsoft.appcenter.assets.exceptions.AssetsInvalidPublicKeyException;
 import com.microsoft.appcenter.assets.exceptions.AssetsMalformedDataException;
 import com.microsoft.appcenter.assets.exceptions.AssetsMergeException;
 import com.microsoft.appcenter.assets.exceptions.AssetsNativeApiCallException;
@@ -45,7 +44,6 @@ import com.microsoft.appcenter.assets.interfaces.AssetsConfirmationDialog;
 import com.microsoft.appcenter.assets.interfaces.AssetsDownloadProgressListener;
 import com.microsoft.appcenter.assets.interfaces.AssetsEntryPointProvider;
 import com.microsoft.appcenter.assets.interfaces.AssetsPlatformUtils;
-import com.microsoft.appcenter.assets.interfaces.AssetsPublicKeyProvider;
 import com.microsoft.appcenter.assets.interfaces.AssetsRestartHandler;
 import com.microsoft.appcenter.assets.interfaces.AssetsRestartListener;
 import com.microsoft.appcenter.assets.interfaces.AssetsSyncStatusListener;
@@ -190,7 +188,7 @@ public abstract class AssetsBaseCore {
      * @param context            application context.
      * @param isDebugMode        indicates whether application is running in debug mode.
      * @param serverUrl          CodePush server url.
-     * @param publicKeyProvider  instance of {@link AssetsPublicKeyProvider}.
+     * @param publicKey          public key for signed updates.
      * @param entryPointProvider instance of {@link AssetsEntryPointProvider}.
      * @param platformUtils      instance of {@link AssetsPlatformUtils}.
      * @param appName            application name.
@@ -203,7 +201,7 @@ public abstract class AssetsBaseCore {
             @NonNull Context context,
             boolean isDebugMode,
             String serverUrl,
-            AssetsPublicKeyProvider publicKeyProvider,
+            String publicKey,
             AssetsEntryPointProvider entryPointProvider,
             AssetsPlatformUtils platformUtils,
             String appVersion,
@@ -226,10 +224,10 @@ public abstract class AssetsBaseCore {
             mAppVersion = appVersion;
         } else {
             try {
-                mPublicKey = publicKeyProvider.getPublicKey();
+                mPublicKey = publicKey;
                 PackageInfo pInfo = mContext.getPackageManager().getPackageInfo(mContext.getPackageName(), 0);
                 mAppVersion = pInfo.versionName;
-            } catch (PackageManager.NameNotFoundException | AssetsInvalidPublicKeyException e) {
+            } catch (PackageManager.NameNotFoundException e) {
                 throw new AssetsInitializeException("Unable to get package info for " + mContext.getPackageName(), e);
             }
         }

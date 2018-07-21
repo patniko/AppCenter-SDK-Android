@@ -30,9 +30,9 @@ public class AssetsBuilder {
     private String mServerUrl;
 
     /**
-     * Public-key related resource descriptor.
+     * Public key for signed updates.
      */
-    private Integer mPublicKeyResourceDescriptor;
+    private String mPublicKey;
 
     /**
      * Path to the update entry folder.
@@ -130,13 +130,13 @@ public class AssetsBuilder {
     }
 
     /**
-     * Sets public-key related resource descriptor.
+     * Sets public key for signed updates.
      *
-     * @param publicKeyResourceDescriptor public-key related resource descriptor.
+     * @param publicKey public key for signed updates.
      * @return instance of {@link AssetsBuilder}.
      */
-    public AssetsBuilder setPublicKeyResourceDescriptor(Integer publicKeyResourceDescriptor) {
-        mPublicKeyResourceDescriptor = publicKeyResourceDescriptor;
+    public AssetsBuilder setPublicKey(String publicKey) {
+        mPublicKey = publicKey;
         return this;
     }
 
@@ -163,7 +163,7 @@ public class AssetsBuilder {
                 this.mContext,
                 this.mIsDebugMode,
                 this.mServerUrl,
-                this.mPublicKeyResourceDescriptor,
+                this.mPublicKey,
                 this.mUpdateSubFolder,
                 this.mAppVersion,
                 this.mAppName,
