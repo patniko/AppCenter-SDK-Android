@@ -13,8 +13,9 @@ import com.microsoft.appcenter.ingestion.models.json.DefaultLogSerializer;
 import com.microsoft.appcenter.ingestion.models.json.LogSerializer;
 import com.microsoft.appcenter.utils.UUIDUtils;
 
+import junit.framework.Assert;
+
 import org.json.JSONException;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;

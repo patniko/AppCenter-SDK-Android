@@ -10,15 +10,12 @@ import com.microsoft.appcenter.ingestion.models.Log;
 import com.microsoft.appcenter.ingestion.models.json.LogSerializer;
 import com.microsoft.appcenter.ingestion.models.one.CommonSchemaLog;
 import com.microsoft.appcenter.ingestion.models.one.SdkExtension;
-import com.microsoft.appcenter.utils.AppCenterLog;
 import com.microsoft.appcenter.utils.UUIDUtils;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
-import static com.microsoft.appcenter.utils.AppCenterLog.LOG_TAG;
 
 /**
  * One Collector channel listener used to redirect selected traffic to One Collector.
@@ -41,7 +38,7 @@ public class OneCollectorChannelListener extends AbstractChannelListener {
      * Maximum number of requests being sent for the group.
      */
     @VisibleForTesting
-    static final int ONE_COLLECTOR_TRIGGER_MAX_PARALLEL_REQUESTS = 2;
+    static final int ONE_COLLECTOR_TRIGGER_MAX_PARALLEL_REQUESTS = 3;
 
     /**
      * Postfix for One Collector's groups.
@@ -88,12 +85,12 @@ public class OneCollectorChannelListener extends AbstractChannelListener {
     }
 
     @Override
-    public void onGroupAdded(@NonNull String groupName, Channel.GroupListener groupListener) {
+    public void onGroupAdded(@NonNull String groupName) {
         if (isOneCollectorGroup(groupName)) {
             return;
         }
         String oneCollectorGroupName = getOneCollectorGroupName(groupName);
-        mChannel.addGroup(oneCollectorGroupName, ONE_COLLECTOR_TRIGGER_COUNT, ONE_COLLECTOR_TRIGGER_INTERVAL, ONE_COLLECTOR_TRIGGER_MAX_PARALLEL_REQUESTS, mIngestion, groupListener);
+        mChannel.addGroup(oneCollectorGroupName, ONE_COLLECTOR_TRIGGER_COUNT, ONE_COLLECTOR_TRIGGER_INTERVAL, ONE_COLLECTOR_TRIGGER_MAX_PARALLEL_REQUESTS, mIngestion, null);
     }
 
     @Override
@@ -114,19 +111,13 @@ public class OneCollectorChannelListener extends AbstractChannelListener {
         }
 
         /* Convert logs to Common Schema. */
-        Collection<CommonSchemaLog> commonSchemaLogs;
-        try {
-            commonSchemaLogs = mLogSerializer.toCommonSchemaLog(log);
-        } catch (IllegalArgumentException e) {
-            AppCenterLog.error(LOG_TAG, "Cannot send a log to one collector: " + e.getMessage());
-            return;
-        }
+        Collection<CommonSchemaLog> commonSchemaLogs = mLogSerializer.toCommonSchemaLog(log);
 
         /* Add SDK extension part A fields. libVer is already set. */
         for (CommonSchemaLog commonSchemaLog : commonSchemaLogs) {
             EpochAndSeq epochAndSeq = mEpochsAndSeqsByIKey.get(commonSchemaLog.getIKey());
             if (epochAndSeq == null) {
-                epochAndSeq = new EpochAndSeq(UUIDUtils.randomUUID().toString());
+                epochAndSeq = new EpochAndSeq(UUIDUtils.randomUUID().toString(), 0L);
                 mEpochsAndSeqsByIKey.put(commonSchemaLog.getIKey(), epochAndSeq);
             }
             SdkExtension sdk = commonSchemaLog.getExt().getSdk();
@@ -203,7 +194,7 @@ public class OneCollectorChannelListener extends AbstractChannelListener {
         /**
          * Epoch.
          */
-        final String epoch;
+        String epoch;
 
         /**
          * Sequence number.
@@ -213,8 +204,9 @@ public class OneCollectorChannelListener extends AbstractChannelListener {
         /**
          * Init.
          */
-        EpochAndSeq(String epoch) {
+        EpochAndSeq(String epoch, long seq) {
             this.epoch = epoch;
+            this.seq = seq;
         }
     }
 }

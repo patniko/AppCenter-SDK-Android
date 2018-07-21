@@ -10,6 +10,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.powermock.api.mockito.PowerMockito.doThrow;
@@ -22,7 +23,7 @@ public class HashUtilsTest {
 
     @Test
     public void init() {
-        new HashUtils();
+        assertNotNull(new HashUtils());
     }
 
     @Test
@@ -47,7 +48,7 @@ public class HashUtilsTest {
     }
 
     @Test(expected = RuntimeException.class)
-    public void utf8NotFound() {
+    public void utf8NotFound() throws UnsupportedEncodingException {
         try {
             HashUtils.sha256("", "Some Invalid Encoding");
         } catch (RuntimeException e) {

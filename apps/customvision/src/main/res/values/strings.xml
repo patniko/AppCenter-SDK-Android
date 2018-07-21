@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">CustomVision Sample</string>
+    <string name="activity_name_classification">Classify</string>
+    <string name="camera_error">This device doesn\'t support Camera2 API.</string>
+    <string name="no_label_file">No label file found</string>
+    <string name="no_model_file">No model file found</string>
+    <string name="no_model_label_file">No model and label files found</string>
+    <string name="build_status_start">Starting build…</string>
+    <string name="build_status_postpone">Build is postponed.</string>
+    <string name="build_status_cancel">Build is being cancelled…</string>
+    <string name="build_status_progress">Build in progress…</string>
+    <string name="build_status_completed">Build completed. Result: </string>
+    <string name="enter_label_msg">Enter name</string>
+    <string name="select_label">Select label:</string>
+    <string name="add_new_label_msg">+ Add new person</string>
+    <string name="build_result_failed">failed.</string>
+    <string name="build_result_cancelled">cancelled.</string>
+    <string name="build_result_succeeded">succeeded.</string>
+    <string name="build_result_partially">partially succeeded.</string>
+    <string name="FRONTAL_CAMERA">true</string>
+    <string name="error_code_401">401 Unauthorized. Check your credentials.</string>
+    <string name="error_code">Some error occurred when making a request. Please check the log for more details.</string>
+    <string name="error_code_duplicate">There were some duplicate images among the ones you\'ve chosen. They were not uploaded.</string>
+    <string formatted="false" name="error_code_404_vsts">Build definition with id %s under project %s was not found</string>
+    <string name="error_code_400">400 Bad Request. Check you project id.</string>
+    <string name="upload_success">Images have been successfully uploaded. Do you want to retrain your model?</string>
+    <string name="no_permissions">Camera AND storage permission are required for this demo</string>
+</resources>

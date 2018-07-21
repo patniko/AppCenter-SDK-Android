@@ -17,6 +17,7 @@ import java.util.Collections;
 
 import static com.microsoft.appcenter.distribute.BrowserUtils.GOOGLE_CHROME_URL_SCHEME;
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertNotNull;
 import static junit.framework.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -45,7 +46,7 @@ public class BrowserUtilsTest {
 
     @Test
     public void init() {
-        new BrowserUtils();
+        assertNotNull(new BrowserUtils());
     }
 
     @Test
@@ -63,7 +64,7 @@ public class BrowserUtilsTest {
     }
 
     @Test
-    public void chrome() {
+    public void chrome() throws Exception {
         Activity activity = mock(Activity.class);
         BrowserUtils.openBrowser(TEST_URL, activity);
         verify(activity).startActivity(argThat(CHROME_MATCHER));
@@ -71,7 +72,7 @@ public class BrowserUtilsTest {
     }
 
     @Test
-    public void noBrowserFound() {
+    public void noBrowserFound() throws Exception {
 
         /* Mock no browser. */
         Activity activity = mock(Activity.class);
@@ -89,7 +90,7 @@ public class BrowserUtilsTest {
     }
 
     @Test
-    public void onlySystemBrowserNoDefaultAsNull() {
+    public void onlySystemBrowserNoDefaultAsNull() throws Exception {
 
         /* Mock no browser. */
         Activity activity = mock(Activity.class);
@@ -122,7 +123,7 @@ public class BrowserUtilsTest {
     }
 
     @Test
-    public void onlySystemBrowserNoDefaultAsPicker() {
+    public void onlySystemBrowserNoDefaultAsPicker() throws Exception {
 
         /* Mock no browser. */
         Activity activity = mock(Activity.class);
@@ -162,7 +163,7 @@ public class BrowserUtilsTest {
     }
 
     @Test
-    public void onlySystemBrowserAndIsDefault() {
+    public void onlySystemBrowserAndIsDefault() throws Exception {
 
         /* Mock no browser. */
         Activity activity = mock(Activity.class);
@@ -202,7 +203,7 @@ public class BrowserUtilsTest {
     }
 
     @Test
-    public void twoBrowsersAndNoDefault() {
+    public void twoBrowsersAndNoDefault() throws Exception {
 
         /* Mock no browser. */
         Activity activity = mock(Activity.class);
@@ -247,7 +248,7 @@ public class BrowserUtilsTest {
     }
 
     @Test
-    public void secondBrowserIsDefault() {
+    public void secondBrowserIsDefault() throws Exception {
 
         /* Mock no browser. */
         Activity activity = mock(Activity.class);

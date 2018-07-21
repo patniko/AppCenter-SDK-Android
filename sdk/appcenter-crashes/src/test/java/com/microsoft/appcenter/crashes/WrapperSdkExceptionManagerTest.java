@@ -88,7 +88,7 @@ public class WrapperSdkExceptionManagerTest {
         Answer<Void> runNow = new Answer<Void>() {
 
             @Override
-            public Void answer(InvocationOnMock invocation) {
+            public Void answer(InvocationOnMock invocation) throws Throwable {
                 ((Runnable) invocation.getArguments()[0]).run();
                 return null;
             }
