@@ -181,7 +181,7 @@ public abstract class AbstractAppCenterService implements AppCenterService {
     }
 
     @Override
-    public synchronized void onStarted(@NonNull Context context, @NonNull Channel channel, String appSecret, String transmissionTargetToken, boolean startedFromApp) {
+    public synchronized void onStarted(@NonNull Context context, String appSecret, String transmissionTargetToken, @NonNull Channel channel) {
         String groupName = getGroupName();
         boolean enabled = isInstanceEnabled();
         if (groupName != null) {
@@ -199,12 +199,6 @@ public abstract class AbstractAppCenterService implements AppCenterService {
         }
         mChannel = channel;
         applyEnabledState(enabled);
-    }
-
-    @Override
-    public void onConfigurationUpdated(String appSecret, String transmissionTargetToken) {
-
-        /* Nothing to do. */
     }
 
     @Override

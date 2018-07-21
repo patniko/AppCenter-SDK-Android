@@ -41,7 +41,7 @@ public class UserExtension implements Model {
     }
 
     @Override
-    public void read(JSONObject object) {
+    public void read(JSONObject object) throws JSONException {
         setLocale(object.optString(LOCALE, null));
     }
 

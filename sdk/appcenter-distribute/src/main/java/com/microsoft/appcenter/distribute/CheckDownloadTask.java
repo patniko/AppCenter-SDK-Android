@@ -96,8 +96,6 @@ class CheckDownloadTask extends AsyncTask<Void, Void, DownloadProgress> {
         /* Query download manager. */
         DownloadManager downloadManager = (DownloadManager) mContext.getSystemService(DOWNLOAD_SERVICE);
         try {
-
-            @SuppressWarnings("ConstantConditions")
             Cursor cursor = downloadManager.query(new DownloadManager.Query().setFilterById(mDownloadId));
             if (cursor == null) {
                 throw new NoSuchElementException();

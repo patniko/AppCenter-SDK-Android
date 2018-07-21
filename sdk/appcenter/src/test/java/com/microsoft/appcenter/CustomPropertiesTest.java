@@ -29,7 +29,7 @@ public class CustomPropertiesTest {
     public PowerMockRule mPowerMockRule = new PowerMockRule();
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         mockStatic(AppCenterLog.class);
     }
 

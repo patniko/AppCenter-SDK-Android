@@ -173,13 +173,7 @@ public class Push extends AbstractAppCenterService {
      * Sender ID of your project before starting the Push service.
      *
      * @param senderId sender ID of your project.
-     *
-     * @deprecated For all the Android developers using App Center, there is a change coming where 
-     * Firebase SDK is required to use Push Notifications. For Android P, its scheduled at
-     * the release date for the latest OS version. For all other versions of Android, it will be
-     * required after April 2019. Please follow the migration guide at https://aka.ms/acfba.
      */
-    @Deprecated
     @SuppressWarnings("WeakerAccess")
     public static void setSenderId(@SuppressWarnings("SameParameterValue") String senderId) {
         getInstance().instanceSetSenderId(senderId);
@@ -211,8 +205,13 @@ public class Push extends AbstractAppCenterService {
      * @param context the context to retrieve FirebaseAnalytics instance.
      * @param enabled <code>true</code> to enable, <code>false</code> to disable.
      */
+    @SuppressWarnings("MissingPermission")
     private synchronized void setFirebaseAnalyticsEnabled(@NonNull Context context, boolean enabled) {
-        FirebaseUtils.setAnalyticsEnabled(context, enabled);
+        try {
+            FirebaseUtils.setAnalyticsEnabled(context, enabled);
+        } catch (FirebaseUtils.FirebaseUnavailableException e) {
+            AppCenterLog.warn(LOG_TAG, "Failed to enable or disable Firebase analytics collection.");
+        }
         mFirebaseAnalyticsEnabled = enabled;
     }
 
@@ -283,9 +282,9 @@ public class Push extends AbstractAppCenterService {
     }
 
     @Override
-    public synchronized void onStarted(@NonNull Context context, @NonNull Channel channel, String appSecret, String transmissionTargetToken, boolean startedFromApp) {
+    public synchronized void onStarted(@NonNull Context context, String appSecret, String transmissionTargetToken, @NonNull Channel channel) {
         mContext = context;
-        super.onStarted(context, channel, appSecret, transmissionTargetToken, startedFromApp);
+        super.onStarted(context, appSecret, transmissionTargetToken, channel);
         if (FirebaseUtils.isFirebaseAvailable() && !mFirebaseAnalyticsEnabled) {
             AppCenterLog.debug(LOG_TAG, "Disabling Firebase analytics collection by default.");
             setFirebaseAnalyticsEnabled(context, false);
@@ -427,21 +426,11 @@ public class Push extends AbstractAppCenterService {
      * Register application for push.
      */
     private synchronized void registerPushToken() {
-
-        /* Update enable state of the firebase service. */
-        FirebaseUtils.setFirebaseMessagingServiceEnabled(mContext, FirebaseUtils.isFirebaseAvailable());
         try {
-
-            /* Try to get token through firebase. */
             onTokenRefresh(FirebaseUtils.getToken());
             AppCenterLog.info(LOG_TAG, "Firebase SDK is available, using Firebase SDK registration.");
         } catch (FirebaseUtils.FirebaseUnavailableException e) {
-            AppCenterLog.warn(LOG_TAG, "Firebase SDK is not available, using built in registration. " +
-                    "For all the Android developers using App Center, there is a change coming where Firebase SDK is required " +
-                    "to use Push Notifications. For Android P, its scheduled at the release date for the latest OS version. " +
-                    "For all other versions of Android, it will be required after April 2019. " +
-                    "Please follow the migration guide at https://aka.ms/acfba.\n" +
-                    "Cause: " + e.getMessage());
+            AppCenterLog.info(LOG_TAG, "Firebase SDK is not available, using built in registration. cause: " + e.getMessage());
             registerPushTokenWithoutFirebase();
         }
     }

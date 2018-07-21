@@ -25,10 +25,8 @@ public abstract class LogActivity extends AppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(getLayoutId());
+        setContentView(R.layout.activity_log);
         mLayoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
-        /* Property view init. */
         mList = findViewById(R.id.list);
         addProperty();
     }
@@ -71,7 +69,5 @@ public abstract class LogActivity extends AppCompatActivity {
         trackLog(name, properties);
     }
 
-    abstract void trackLog(String name, Map<String, String> properties);
-
-    abstract int getLayoutId();
+    protected abstract void trackLog(String name, Map<String, String> properties);
 }
