@@ -29,13 +29,6 @@
     <string name="key" tools:ignore="MissingTranslation">Key</string>
     <string name="value" tools:ignore="MissingTranslation">Value</string>
     <string name="type" tools:ignore="MissingTranslation">Type</string>
-    <string name="package_info_format" tools:ignore="MissingTranslation">%sCurrent package info:%s %s</string>
-    <string name="rm_package_info_format" tools:ignore="MissingTranslation">%sAvailable package info:%s %s</string>
-    <string name="assets_no_package">no package installed.</string>
-    <string name="assets_no_rm_package">no package available.</string>
-    <string name="assets_go_to_installation"><![CDATA[Go to installation >]]></string>
-    <string name="assets_check_for_update_btn">Check for update</string>
-    <string name="assets_progress_lbl">Checking…</string>
     <string-array name="custom_property_types" tools:ignore="MissingTranslation">
         <item>Clear</item>
         <item>Boolean</item>

@@ -116,14 +116,14 @@ public class Assets extends AbstractAppCenterService {
      * @param deploymentKey application deployment key.
      * @return instance of {@link AssetsBuilder}.
      */
-    public static AppCenterFuture<AssetsBuilder> getBuilder(String deploymentKey) {
+    public static AppCenterFuture<AssetsBuilder> getBuilder(String deploymentKey, Context context) {
         if (sInstance.isInstanceEnabled()) {
             mDeploymentKey = deploymentKey;
             builderFuture = new DefaultAppCenterFuture<>();
 
             /* If the service is already started, resolve right away. */
-            if (mContext != null) {
-                builderFuture.complete(new AssetsBuilder(mDeploymentKey, mContext, getInstance()));
+            if (context != null) {
+                builderFuture.complete(new AssetsBuilder(mDeploymentKey, context, getInstance()));
             }
         }
         return builderFuture;

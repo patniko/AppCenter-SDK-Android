@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="package_info_format" tools:ignore="MissingTranslation">%sCurrent package info:%s %s</string>
+    <string name="rm_package_info_format" tools:ignore="MissingTranslation">%sAvailable package info:%s %s</string>
+    <string name="assets_no_package">no package installed.</string>
+    <string name="assets_no_rm_package">no package available.</string>
+    <string name="assets_go_to_installation"><![CDATA[Go to installation >]]></string>
+    <string name="assets_check_for_update_btn">Check for update</string>
+    <string name="assets_progress_lbl">Checking…</string>
+    <string name="assets_sync_btn">Sync</string>
+    <string name="assets_download_progress_lbl">Download progress:</string>
+    <string name="assets_sync_status_lbl">Sync status:</string>
+    <string name="assets_no_update_content">No update content.</string>
+    <string name="assets_clear_updates_btn">Clear updates</string>
+    <string name="assets_no_image_format">No image in update contents to display. Please put image under %s or update path to entry file in Settings.</string>
+    <string name="assets_default_sync_status">None</string>
+    <string name="assets_default_progress_lbl">0%</string>
+    <string name="assets_sync_up_to_date">Up to date</string>
+    <string name="assets_sync_err">Unknown error</string>
+    <string name="assets_sync_ignored">Update ignored</string>
+    <string name="assets_sync_progress">Sync in progress</string>
+    <string name="assets_sync_installed">Update installed</string>
+    <string name="assets_sync_installing">Installing update</string>
+    <string name="assets_sync_checking">Checking for update</string>
+    <string name="assets_sync_awaiting">Awaiting user action</string>
+    <string name="assets_sync_downloading">Downloading package</string>
+</resources>

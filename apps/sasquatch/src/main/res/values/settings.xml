@@ -55,6 +55,12 @@
     <string name="appcenter_assets_app_name_reset_format" tools:ignore="MissingTranslation">Assets app name is successfully reset to %s.</string>
     <string name="appcenter_assets_app_name_invalid" tools:ignore="MissingTranslation">Assets app name is not valid.</string>
 
+    <string name="appcenter_assets_entry_point_key" tools:ignore="MissingTranslation">assets_entry_point_key</string>
+    <string name="appcenter_assets_entry_point_title" tools:ignore="MissingTranslation">Path to test image in update contents</string>
+    <string name="appcenter_assets_entry_point_changed_format" tools:ignore="MissingTranslation">Assets test entry point to %s successfully.</string>
+    <string name="appcenter_assets_entry_point_reset_format" tools:ignore="MissingTranslation">Assets test entry point is successfully reset to %s.</string>
+    <string name="appcenter_assets_entry_point_invalid" tools:ignore="MissingTranslation">Path is not valid.</string>
+
     <string name="appcenter_assets_app_version_key" tools:ignore="MissingTranslation">assets_app_version_key</string>
     <string name="appcenter_assets_app_version_title" tools:ignore="MissingTranslation">App version</string>
     <string name="appcenter_assets_app_version_changed_format" tools:ignore="MissingTranslation">App version is successfully overridden to %s.</string>
