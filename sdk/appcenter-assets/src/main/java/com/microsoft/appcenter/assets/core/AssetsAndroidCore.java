@@ -4,6 +4,8 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 
 import com.microsoft.appcenter.assets.Assets;
+import com.microsoft.appcenter.assets.AssetsAndroidDialog;
+import com.microsoft.appcenter.assets.DownloadProgress;
 import com.microsoft.appcenter.assets.enums.AssetsInstallMode;
 import com.microsoft.appcenter.assets.exceptions.AssetsInitializeException;
 import com.microsoft.appcenter.assets.interfaces.AssetsConfirmationDialog;
@@ -48,10 +50,15 @@ public class AssetsAndroidCore extends AssetsBaseCore {
             String baseDirectory
     ) throws AssetsInitializeException {
         super(deploymentKey, context, isDebugMode, serverUrl, publicKey, entryPointProvider, platformUtils, appVersion, appName, baseDirectory);
+        setConfirmationDialog(new AssetsAndroidDialog(context));
     }
 
     @Override protected DownloadProgressCallback getDownloadProgressCallbackForUpdateDownload() {
-        return null;
+        return new DownloadProgressCallback() {
+            @Override public void call(DownloadProgress downloadProgress) {
+                notifyAboutDownloadProgressChange(downloadProgress.getReceivedBytes(), downloadProgress.getTotalBytes());
+            }
+        };
     }
 
     @Override protected void handleInstallModesForUpdateInstall(AssetsInstallMode installMode) {
