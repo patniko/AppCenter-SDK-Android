@@ -17,6 +17,10 @@
     <string name="description_error" tools:ignore="MissingTranslation">Send an exception</string>
     <string name="title_event" tools:ignore="MissingTranslation">Events</string>
     <string name="description_event" tools:ignore="MissingTranslation">Send a custom event</string>
+    <string name="title_assets" tools:ignore="MissingTranslation">Assets</string>
+    <string name="description_assets" tools:ignore="MissingTranslation">Check for update</string>
+    <string name="title_sync" tools:ignore="MissingTranslation">Sync</string>
+    <string name="description_sync" tools:ignore="MissingTranslation">Install Update</string>
     <string name="title_page" tools:ignore="MissingTranslation">Pages</string>
     <string name="description_page" tools:ignore="MissingTranslation">Send custom pages</string>
     <string name="send" tools:ignore="MissingTranslation">Send</string>

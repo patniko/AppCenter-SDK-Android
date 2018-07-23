@@ -60,6 +60,7 @@ dependencies {
     implementation "com.android.support:appcompat-v7:${rootProject.ext.supportLibVersion}"
 
     projectDependencyImplementation project(':sdk:appcenter-analytics')
+    projectDependencyImplementation project(':sdk:appcenter-assets')
     projectDependencyImplementation project(':sdk:appcenter-crashes')
     projectDependencyImplementation project(':sdk:appcenter-distribute')
     projectDependencyImplementation project(':sdk:appcenter-push')

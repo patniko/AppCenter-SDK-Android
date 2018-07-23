@@ -9,7 +9,6 @@ import com.microsoft.appcenter.assets.exceptions.AssetsInitializeException;
 import com.microsoft.appcenter.assets.interfaces.AssetsConfirmationDialog;
 import com.microsoft.appcenter.assets.interfaces.AssetsEntryPointProvider;
 import com.microsoft.appcenter.assets.interfaces.AssetsPlatformUtils;
-import com.microsoft.appcenter.assets.interfaces.AssetsPublicKeyProvider;
 import com.microsoft.appcenter.assets.interfaces.AssetsRestartListener;
 import com.microsoft.appcenter.assets.interfaces.DownloadProgressCallback;
 import com.microsoft.appcenter.utils.AppCenterLog;
@@ -28,7 +27,7 @@ public class AssetsAndroidCore extends AssetsBaseCore {
      * @param context            application context.
      * @param isDebugMode        indicates whether application is running in debug mode.
      * @param serverUrl          CodePush server url.
-     * @param publicKeyProvider  instance of {@link AssetsPublicKeyProvider}.
+     * @param publicKey          public key for signed updates.
      * @param entryPointProvider instance of {@link AssetsEntryPointProvider}.
      * @param platformUtils      instance of {@link AssetsPlatformUtils}.
      * @param appName            application name.
@@ -41,14 +40,14 @@ public class AssetsAndroidCore extends AssetsBaseCore {
             @NonNull Context context,
             boolean isDebugMode,
             String serverUrl,
-            AssetsPublicKeyProvider publicKeyProvider,
+            String publicKey,
             AssetsEntryPointProvider entryPointProvider,
             AssetsPlatformUtils platformUtils,
             String appVersion,
             String appName,
             String baseDirectory
     ) throws AssetsInitializeException {
-        super(deploymentKey, context, isDebugMode, serverUrl, publicKeyProvider, entryPointProvider, platformUtils, appVersion, appName, baseDirectory);
+        super(deploymentKey, context, isDebugMode, serverUrl, publicKey, entryPointProvider, platformUtils, appVersion, appName, baseDirectory);
     }
 
     @Override protected DownloadProgressCallback getDownloadProgressCallbackForUpdateDownload() {
