@@ -1,4 +1,4 @@
-﻿# Contributing to Visual Studio App Center SDK for Android 
+﻿# Contributing to Visual Studio App Center SDK for Android
 
 Welcome, and thank you for your interest in contributing to VS App Center SDK for Android!
 The goal of this document is to provide a high-level overview of how you can get involved.
