@@ -54,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
 
     static final String ASSETS_SERVER_URL = "assetsServerUrl";
 
+    static final String ASSETS_ENTRY_FILE = "assetsEntryFile";
+
     static final String TARGET_KEY = "target";
 
     static final String APPCENTER_START_TYPE = "appCenterStartType";

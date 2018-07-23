@@ -52,6 +52,10 @@
             android:title="@string/appcenter_assets_app_name_title" />
         <Preference
             android:dependency="@string/appcenter_assets_state_key"
+            android:key="@string/appcenter_assets_entry_point_key"
+            android:title="@string/appcenter_assets_entry_point_title" />
+        <Preference
+            android:dependency="@string/appcenter_assets_state_key"
             android:key="@string/appcenter_assets_app_version_key"
             android:title="@string/appcenter_assets_app_version_title" />
         <Preference

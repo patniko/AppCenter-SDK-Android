@@ -1,10 +1,130 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.microsoft.appcenter.sasquatch.activities.AssetsActivitySync">
+    android:orientation="vertical"
+    tools:context="com.microsoft.appcenter.sasquatch.activities.AssetsActivity">
 
-</android.support.constraint.ConstraintLayout>
+    <Button
+        android:id="@+id/sync_btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:background="#FFE1E1E1"
+        android:text="@string/assets_sync_btn"/>
+
+    <TextView
+        android:id="@+id/no_content_lbl"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_margin="10dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="@string/assets_no_update_content"/>
+
+    <ImageView
+        android:id="@+id/content_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_margin="10dp"
+        android:layout_weight="1"
+        android:scaleType="fitXY"
+        android:visibility="gone"/>
+
+    <LinearLayout
+        android:id="@+id/update_path_block"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/assets_path_to_update_lbl"
+            android:textColor="@android:color/black"
+            android:textSize="16dp"/>
+
+        <TextView
+            android:id="@+id/update_path_lbl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawableBottom="@drawable/ic_arrow_down"
+            android:drawablePadding="-8dp"
+            android:ellipsize="end"
+            android:gravity="start"
+            android:lines="1"
+            android:textColor="#6b6b6b"
+            android:textSize="14dp"/>
+
+        <TextView
+            android:id="@+id/update_path_lbl_expanded"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawableBottom="@drawable/ic_arrow_up"
+            android:drawablePadding="-8dp"
+            android:gravity="start"
+            android:textColor="#6b6b6b"
+            android:textSize="14dp"
+            android:visibility="gone"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/assets_download_progress_lbl"
+            android:textColor="@android:color/black"
+            android:textSize="16dp"/>
+
+        <TextView
+            android:id="@+id/download_progress_lbl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:gravity="end"
+            android:text="@string/assets_default_progress_lbl"
+            android:textColor="#6b6b6b"
+            android:textSize="16dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/assets_sync_status_lbl"
+            android:textColor="@android:color/black"
+            android:textSize="16dp"/>
+
+        <TextView
+            android:id="@+id/sync_status_lbl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:gravity="end"
+            android:text="@string/assets_default_sync_status"
+            android:textColor="#6b6b6b"
+            android:textSize="16dp"/>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/clear_updates_btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:background="#FFE1E1E1"
+        android:text="@string/assets_clear_updates_btn"/>
+</LinearLayout>

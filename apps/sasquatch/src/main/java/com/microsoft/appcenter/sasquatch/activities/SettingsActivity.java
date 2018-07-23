@@ -44,6 +44,7 @@ import static com.microsoft.appcenter.sasquatch.activities.MainActivity.APPCENTE
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.APP_SECRET_KEY;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.ASSETS_APP_NAME_KEY;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.ASSETS_APP_VERSION_KEY;
+import static com.microsoft.appcenter.sasquatch.activities.MainActivity.ASSETS_ENTRY_FILE;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.ASSETS_PUBLIC_KEY;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.ASSETS_SERVER_URL;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.DEPLOYMENT_KEY_KEY;
@@ -235,6 +236,43 @@ public class SettingsActivity extends AppCompatActivity {
                                     MainActivity.sSharedPreferences.edit().remove(ASSETS_APP_NAME_KEY).apply();
                                     Toast.makeText(getActivity(), String.format(getActivity().getString(R.string.appcenter_assets_app_name_reset_format), defaultAssetsAppName), Toast.LENGTH_SHORT).show();
                                     preference.setSummary(defaultAssetsAppName);
+                                }
+                            })
+                            .setNegativeButton(R.string.cancel, null)
+                            .create().show();
+                    return true;
+                }
+            });
+
+            initClickableSetting(R.string.appcenter_assets_entry_point_key, MainActivity.sSharedPreferences.getString(ASSETS_ENTRY_FILE, getString(R.string.assets_entry_file)), new Preference.OnPreferenceClickListener() {
+
+                @Override
+                public boolean onPreferenceClick(final Preference preference) {
+                    final EditText input = new EditText(getActivity());
+                    input.setInputType(InputType.TYPE_CLASS_TEXT);
+                    input.setText(MainActivity.sSharedPreferences.getString(ASSETS_ENTRY_FILE, getString(R.string.assets_entry_file)));
+
+                    new AlertDialog.Builder(getActivity()).setTitle(R.string.appcenter_assets_entry_point_title).setView(input)
+                            .setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String assetsEntryFile = input.getText().toString();
+                                    if (!TextUtils.isEmpty(assetsEntryFile)) {
+                                        setKeyValue(ASSETS_ENTRY_FILE, assetsEntryFile);
+                                        Toast.makeText(getActivity(), String.format(getActivity().getString(R.string.appcenter_assets_entry_point_changed_format), assetsEntryFile), Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(getActivity(), R.string.appcenter_assets_entry_point_invalid, Toast.LENGTH_SHORT).show();
+                                    }
+                                    preference.setSummary(MainActivity.sSharedPreferences.getString(ASSETS_ENTRY_FILE, getString(R.string.assets_entry_file)));
+                                }
+                            })
+                            .setNeutralButton(R.string.reset, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String defaultAssetsEntryFile = getString(R.string.assets_entry_file);
+                                    MainActivity.sSharedPreferences.edit().remove(ASSETS_ENTRY_FILE).apply();
+                                    Toast.makeText(getActivity(), String.format(getActivity().getString(R.string.appcenter_assets_entry_point_reset_format), defaultAssetsEntryFile), Toast.LENGTH_SHORT).show();
+                                    preference.setSummary(defaultAssetsEntryFile);
                                 }
                             })
                             .setNegativeButton(R.string.cancel, null)
