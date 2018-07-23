@@ -214,22 +214,24 @@ public abstract class AssetsBaseCore {
         mContext = context.getApplicationContext();
         mBaseDirectory = baseDirectory != null ? baseDirectory : mContext.getFilesDir().getAbsolutePath();
         mIsDebugMode = isDebugMode;
-        if (serverUrl != null) {
-            mServerUrl = serverUrl;
-        }
-        if (appName != null) {
-            mAppName = appName;
-        }
         if (appVersion != null) {
             mAppVersion = appVersion;
         } else {
             try {
-                mPublicKey = publicKey;
                 PackageInfo pInfo = mContext.getPackageManager().getPackageInfo(mContext.getPackageName(), 0);
                 mAppVersion = pInfo.versionName;
             } catch (PackageManager.NameNotFoundException e) {
                 throw new AssetsInitializeException("Unable to get package info for " + mContext.getPackageName(), e);
             }
+        }
+        if (publicKey != null) {
+            mPublicKey = publicKey;
+        }
+        if (appName != null) {
+            mAppName = appName;
+        }
+        if (serverUrl != null) {
+            mServerUrl = serverUrl;
         }
 
         /* Initialize utilities. */

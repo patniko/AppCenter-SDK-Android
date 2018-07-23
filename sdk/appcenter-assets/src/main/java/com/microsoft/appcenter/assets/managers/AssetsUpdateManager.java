@@ -442,16 +442,6 @@ public class AssetsUpdateManager {
             File unzippedFolder = new File(unzippedFolderPath);
             mFileUtils.unzipFile(downloadFile, unzippedFolder);
             mFileUtils.deleteFileOrFolderSilently(downloadFile);
-            // Rename app package directory to match configured app name
-            for (File file : unzippedFolder.listFiles()) {
-                if (file.isDirectory()) {
-                    if (!file.renameTo(new File(unzippedFolder, mAssetsConfiguration.getAppName()))) {
-                        throw new IOException("Unable to rename package file.");
-                    }
-                    return;
-                }
-            }
-            mFileUtils.deleteFileOrFolderSilently(downloadFile);
         } catch (IOException e) {
             throw new AssetsUnzipException(e);
         }

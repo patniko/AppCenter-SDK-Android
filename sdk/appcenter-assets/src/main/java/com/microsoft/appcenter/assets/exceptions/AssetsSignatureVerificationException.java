@@ -69,6 +69,10 @@ public class AssetsSignatureVerificationException extends SignatureException {
         super(SignatureExceptionType.DEFAULT.getMessage(), cause);
     }
 
+    public AssetsSignatureVerificationException(String expectedHash, String actualHash) {
+        super(String.format("Hashes are not equal! Expected: %s; actual: %s", expectedHash, actualHash));
+    }
+
     /**
      * Creates an instance of exception with specified sub-type and cause.
      *

@@ -49,6 +49,26 @@ public class HashUtils {
     }
 
     /**
+     * Hash data with sha256 and encodeHex output in hexadecimal.
+     *
+     * @param data data to hash.
+     * @return hashed data in hexadecimal output.
+     */
+    public static String sha256(@NonNull byte[] data) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update(data);
+            return encodeHex(digest.digest());
+        } catch (NoSuchAlgorithmException e) {
+
+            /*
+             * Never happens as every device has UTF-8 support and SHA-256,
+             * but if it ever happens make sure we propagate exception as unchecked.
+             */
+            throw new RuntimeException(e);
+        }
+    }
+    /**
      * Encode a byte array to a string (hexadecimal) representation.
      *
      * @param bytes the bytes to encodeHex.

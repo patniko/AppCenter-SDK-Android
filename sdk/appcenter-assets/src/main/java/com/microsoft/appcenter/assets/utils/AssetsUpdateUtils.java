@@ -127,13 +127,23 @@ public class AssetsUpdateUtils {
                 addContentsOfFolderToManifest(fullFilePath, relativePath, manifest);
             } else {
                 try {
-                    String fileData = mFileUtils.readFileToString(file.getAbsolutePath());
+                    byte[] fileData = mFileUtils.readFileToByteArray(file);
                     manifest.add(relativePath + ":" + computeHash(fileData));
                 } catch (IOException e) {
                     throw new IOException("Unable to compute hash of update contents.", e);
                 }
             }
         }
+    }
+
+    /**
+     * Computes hash for bytes array.
+     *
+     * @param data input bytes array.
+     * @return computed hash.
+     */
+    private String computeHash(byte[] data) {
+        return HashUtils.sha256(data);
     }
 
     /**
@@ -210,7 +220,7 @@ public class AssetsUpdateUtils {
      * @return <code>true</code>, if verification succeeded, <code>false</code> otherwise.
      * @throws IOException read/write error occurred while accessing the file system.
      */
-    public boolean verifyFolderHash(String folderPath, String expectedHash) throws IOException {
+    public void verifyFolderHash(String folderPath, String expectedHash) throws IOException, AssetsSignatureVerificationException {
         AppCenterLog.info(Assets.LOG_TAG, "Verifying hash for folder path: " + folderPath);
         ArrayList<String> updateContentsManifest = new ArrayList<>();
         try {
@@ -231,7 +241,9 @@ public class AssetsUpdateUtils {
         AppCenterLog.info(Assets.LOG_TAG, "Manifest string: " + updateContentsManifestString);
         String updateContentsManifestHash = computeHash(updateContentsManifestString);
         AppCenterLog.info(Assets.LOG_TAG, "Expected hash: " + expectedHash + ", actual hash: " + updateContentsManifestHash);
-        return expectedHash.equals(updateContentsManifestHash);
+        if (!expectedHash.equals(updateContentsManifestHash)) {
+            throw  new AssetsSignatureVerificationException(expectedHash, updateContentsManifestHash);
+        }
     }
 
     /**
@@ -366,7 +378,7 @@ public class AssetsUpdateUtils {
                 }
             } else {
                 String fileName = file.getName();
-                if (fileName.equals(expectedFileName)) {
+                if (fileName.equals(expectedFileName) || fullFilePath.endsWith(expectedFileName)) {
                     return fileName;
                 }
             }
