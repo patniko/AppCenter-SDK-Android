@@ -15,13 +15,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.microsoft.appcenter.assets.Assets;
 import com.microsoft.appcenter.assets.AssetsBuilder;
+import com.microsoft.appcenter.assets.AssetsConfiguration;
 import com.microsoft.appcenter.assets.datacontracts.AssetsLocalPackage;
 import com.microsoft.appcenter.assets.datacontracts.AssetsPackage;
 import com.microsoft.appcenter.assets.datacontracts.AssetsRemotePackage;
 import com.microsoft.appcenter.sasquatch.R;
 import com.microsoft.appcenter.utils.async.AppCenterConsumer;
 
-import java.util.Locale;
+import java.util.Date;
 import java.util.Map;
 
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.ASSETS_APP_NAME_KEY;
@@ -35,7 +36,10 @@ public class AssetsActivity extends AppCompatActivity {
     private Assets.AssetsDeploymentInstance assets;
 
     private TextView mPackageInfoView;
+    private TextView mPackageInfoLbl;
     private LinearLayout mProgressLbl;
+    private TextView mDeploymentKeyLbl;
+    private TextView mAppVersionLbl;
     private Button mCheckForUpdateBtn;
     private Button mInstallBtn;
 
@@ -45,9 +49,12 @@ public class AssetsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_assets);
 
         mPackageInfoView = findViewById(R.id.package_info);
+        mPackageInfoLbl = findViewById(R.id.package_info_lbl);
         mCheckForUpdateBtn = findViewById(R.id.check_for_update_btn);
         mInstallBtn = findViewById(R.id.install_btn);
         mProgressLbl = findViewById(R.id.progress_lbl);
+        mDeploymentKeyLbl = findViewById(R.id.deployment_key_lbl);
+        mAppVersionLbl = findViewById(R.id.app_version_lbl);
 
         updateInfoView(true, null);
 
@@ -59,6 +66,7 @@ public class AssetsActivity extends AppCompatActivity {
         mInstallBtn.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View view) {
                 Intent intent = new Intent(AssetsActivity.this, AssetsActivitySync.class);
+                finish();
                 startActivity(intent);
             }
         });
@@ -68,6 +76,7 @@ public class AssetsActivity extends AppCompatActivity {
 
     private void setupAssets() {
         String deploymentKey = MainActivity.sSharedPreferences.getString(DEPLOYMENT_KEY_KEY, getString(R.string.deployment_key));
+        mDeploymentKeyLbl.setText(deploymentKey);
         Assets.getBuilder(deploymentKey, this).thenAccept(new AppCenterConsumer<AssetsBuilder>() {
             @Override public void accept(AssetsBuilder assetsBuilder) {
                 String appName = MainActivity.sSharedPreferences.getString(ASSETS_APP_NAME_KEY, null);
@@ -92,7 +101,8 @@ public class AssetsActivity extends AppCompatActivity {
                         updateInfoView(true, assetsLocalPackage);
                     }
                 });
-                // assets.addSyncStatusListener(AssetsActivity.this);
+                AssetsConfiguration assetsConfiguration = assets.getConfiguration();
+                mAppVersionLbl.setText(assetsConfiguration.getAppVersion());
             }
         });
     }
@@ -101,13 +111,14 @@ public class AssetsActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override public void run() {
                 mPackageInfoView.setText(constructPackageInfoString(isCurrent, packageInfo));
-                mInstallBtn.setVisibility(packageInfo != null ? View.VISIBLE : View.GONE);
+                mInstallBtn.setVisibility(packageInfo != null && !isCurrent ? View.VISIBLE : View.GONE);
             }
         });
     }
 
     private Spanned constructPackageInfoString(boolean isCurrent, AssetsPackage packageInfo) {
-        String text = getString(isCurrent ? R.string.package_info_format : R.string.rm_package_info_format);
+        String text = getString(isCurrent ? R.string.package_info : R.string.rm_package_info);
+        mPackageInfoLbl.setText(text);
         int highlightColorRes = ContextCompat.getColor(getApplicationContext(), android.R.color.black);
         String highlightColorString = "#" + Integer.toHexString(highlightColorRes).substring(2);
         String packageString = isCurrent ? getString(R.string.assets_no_package) : getString(R.string.assets_no_rm_package);
@@ -116,12 +127,28 @@ public class AssetsActivity extends AppCompatActivity {
             JsonElement json = gson.toJsonTree(packageInfo);
             StringBuilder packageStringBuilder = new StringBuilder();
             for (Map.Entry<String, JsonElement> entry : json.getAsJsonObject().entrySet()) {
-                packageStringBuilder.append("<br>").append("<b>").append(entry.getKey()).append("</b> : ").append(entry.getValue());
+                String key = entry.getKey();
+                if (key.equals("deploymentKey") || key.equals("appVersion")) {
+                    continue;
+                }
+                String value = entry.getValue().toString().replace("\"", "");
+                if (key.equals("binaryModifiedTime")) {
+                    value = new Date(Long.parseLong(value)).toString();
+                }
+                String lineBreak = key.equals("packageHash") || key.equals("binaryModifiedTime") || key.equals("downloadUrl") ? "<br>" : "";
+                packageStringBuilder
+                        .append("<font color=")
+                        .append(highlightColorString)
+                        .append(">")
+                        .append(key)
+                        .append("</font> : ")
+                        .append(lineBreak)
+                        .append(value)
+                        .append("<br>");
             }
             packageString = packageStringBuilder.toString();
         }
-        String html = String.format(Locale.getDefault(), text, "<b><font color=" + highlightColorString + ">", "</b></font><br>", packageString.toString());
-        return Html.fromHtml(html);
+        return Html.fromHtml(packageString);
     }
 
     public void checkForUpdate() {
