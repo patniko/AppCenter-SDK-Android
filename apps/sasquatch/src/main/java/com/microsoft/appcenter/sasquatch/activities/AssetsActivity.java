@@ -45,11 +45,11 @@ public class AssetsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_assets);
 
         mPackageInfoView = findViewById(R.id.package_info);
-        updateInfoView(true, null);
-
         mCheckForUpdateBtn = findViewById(R.id.check_for_update_btn);
         mInstallBtn = findViewById(R.id.install_btn);
         mProgressLbl = findViewById(R.id.progress_lbl);
+
+        updateInfoView(true, null);
 
         mCheckForUpdateBtn.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View view) {
@@ -68,7 +68,7 @@ public class AssetsActivity extends AppCompatActivity {
 
     private void setupAssets() {
         String deploymentKey = MainActivity.sSharedPreferences.getString(DEPLOYMENT_KEY_KEY, getString(R.string.deployment_key));
-        Assets.getBuilder(deploymentKey).thenAccept(new AppCenterConsumer<AssetsBuilder>() {
+        Assets.getBuilder(deploymentKey, this).thenAccept(new AppCenterConsumer<AssetsBuilder>() {
             @Override public void accept(AssetsBuilder assetsBuilder) {
                 String appName = MainActivity.sSharedPreferences.getString(ASSETS_APP_NAME_KEY, null);
                 String appVersion = MainActivity.sSharedPreferences.getString(ASSETS_APP_VERSION_KEY, null);
@@ -101,9 +101,7 @@ public class AssetsActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override public void run() {
                 mPackageInfoView.setText(constructPackageInfoString(isCurrent, packageInfo));
-                if (packageInfo != null) {
-                    mInstallBtn.setVisibility(View.VISIBLE);
-                }
+                mInstallBtn.setVisibility(packageInfo != null ? View.VISIBLE : View.GONE);
             }
         });
     }
