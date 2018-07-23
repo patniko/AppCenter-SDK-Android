@@ -2,6 +2,8 @@ package com.microsoft.appcenter.sasquatch.activities;
 
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
@@ -33,7 +35,8 @@ import static com.microsoft.appcenter.sasquatch.activities.MainActivity.DEPLOYME
 public class AssetsActivitySync extends AppCompatActivity implements AssetsSyncStatusListener, AssetsDownloadProgressListener {
 
     private Assets.AssetsDeploymentInstance assets;
-
+    private Handler mWorkHandler;
+    private HandlerThread mHandlerThread;
     private TextView mDownloadProgressLbl;
     private TextView mSyncStatusLbl;
     private TextView mNoContentLbl;
@@ -45,7 +48,6 @@ public class AssetsActivitySync extends AppCompatActivity implements AssetsSyncS
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_assets_sync);
-
         mDownloadProgressLbl = findViewById(R.id.download_progress_lbl);
         mSyncStatusLbl = findViewById(R.id.sync_status_lbl);
         mNoContentLbl = findViewById(R.id.no_content_lbl);
@@ -101,14 +103,37 @@ public class AssetsActivitySync extends AppCompatActivity implements AssetsSyncS
         });
     }
 
+    @Override
+    public synchronized void onResume() {
+        super.onResume();
+        mHandlerThread = new HandlerThread("inference");
+        mHandlerThread.start();
+        mWorkHandler = new Handler(mHandlerThread.getLooper());
+    }
+
+    @Override
+    public synchronized void onPause() {
+        mHandlerThread.quit();
+        try {
+            mHandlerThread.join();
+            mHandlerThread = null;
+            mWorkHandler = null;
+        } catch (final InterruptedException e) {
+            //
+        }
+        super.onPause();
+    }
+
     public void sync() {
-        new Thread(new Runnable() {
-            @Override public void run() {
+        mWorkHandler.post(new Runnable() {
+            @Override
+            public void run() {
                 AssetsSyncOptions assetsSyncOptions = new AssetsSyncOptions();
                 assetsSyncOptions.setUpdateDialog(new AssetsUpdateDialog());
                 assets.sync(assetsSyncOptions);
             }
-        }).start();
+        });
+
     }
 
     @Override public void syncStatusChanged(final AssetsSyncStatus syncStatus) {
@@ -162,7 +187,7 @@ public class AssetsActivitySync extends AppCompatActivity implements AssetsSyncS
                 if (percentage == 100) {
                     downloadProgressText = "Package downloaded";
                 } else {
-                    downloadProgressText = String.format(Locale.getDefault(), "%d", percentage);
+                    downloadProgressText = String.format(Locale.getDefault(), "%d%%", percentage);
                 }
                 mDownloadProgressLbl.setText(downloadProgressText);
             }
