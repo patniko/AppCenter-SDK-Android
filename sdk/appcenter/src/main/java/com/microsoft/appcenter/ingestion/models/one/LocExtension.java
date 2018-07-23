@@ -41,7 +41,7 @@ public class LocExtension implements Model {
     }
 
     @Override
-    public void read(JSONObject object) {
+    public void read(JSONObject object) throws JSONException {
         setTz(object.optString(TZ, null));
     }
 

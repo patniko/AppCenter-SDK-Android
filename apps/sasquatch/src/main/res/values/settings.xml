@@ -36,6 +36,43 @@
     <string name="appcenter_crashes_file_attachment_summary" tools:ignore="MissingTranslation">File: %1$s Size: %2$s</string>
     <string name="appcenter_crashes_file_attachment_summary_empty" tools:ignore="MissingTranslation">The file isn\'t selected</string>
 
+    <string name="assets_key" tools:ignore="MissingTranslation">appcenter_assets</string>
+    <string name="assets_title" tools:ignore="MissingTranslation">Assets</string>
+
+    <string name="appcenter_assets_state_key" tools:ignore="MissingTranslation">appcenter_assets_state_key</string>
+    <string name="appcenter_assets_state_title" tools:ignore="MissingTranslation">Assets state</string>
+    <string name="appcenter_assets_state_summary_enabled" tools:ignore="MissingTranslation">Assets are enabled</string>
+    <string name="appcenter_assets_state_summary_disabled" tools:ignore="MissingTranslation">Assets are disabled</string>
+
+    <string name="appcenter_assets_deployment_key_key" tools:ignore="MissingTranslation">deployment_key_key</string>
+    <string name="appcenter_assets_deployment_key_title" tools:ignore="MissingTranslation">Deployment key</string>
+    <string name="appcenter_assets_deployment_key_changed_format" tools:ignore="MissingTranslation">Deployment key is changed to %s successfully.</string>
+    <string name="appcenter_assets_deployment_key_invalid" tools:ignore="MissingTranslation">Deployment key is not valid.</string>
+
+    <string name="appcenter_assets_app_name_key" tools:ignore="MissingTranslation">assets_app_name_key</string>
+    <string name="appcenter_assets_app_name_title" tools:ignore="MissingTranslation">App name</string>
+    <string name="appcenter_assets_app_name_changed_format" tools:ignore="MissingTranslation">Assets app name is changed to %s successfully.</string>
+    <string name="appcenter_assets_app_name_reset_format" tools:ignore="MissingTranslation">Assets app name is successfully reset to %s.</string>
+    <string name="appcenter_assets_app_name_invalid" tools:ignore="MissingTranslation">Assets app name is not valid.</string>
+
+    <string name="appcenter_assets_app_version_key" tools:ignore="MissingTranslation">assets_app_version_key</string>
+    <string name="appcenter_assets_app_version_title" tools:ignore="MissingTranslation">App version</string>
+    <string name="appcenter_assets_app_version_changed_format" tools:ignore="MissingTranslation">App version is successfully overridden to %s.</string>
+    <string name="appcenter_assets_app_version_reset_format" tools:ignore="MissingTranslation">App version is successfully reset to %s.</string>
+    <string name="appcenter_assets_app_version_invalid" tools:ignore="MissingTranslation">App version is not valid.</string>
+
+    <string name="appcenter_assets_public_key_key" tools:ignore="MissingTranslation">assets_public_key_key</string>
+    <string name="appcenter_assets_public_key_title" tools:ignore="MissingTranslation">Public key</string>
+    <string name="appcenter_assets_public_key_changed_format" tools:ignore="MissingTranslation">Public key is successfully changed to %s.</string>
+    <string name="appcenter_assets_public_key_changed" tools:ignore="MissingTranslation">Public key is reset.</string>
+    <string name="appcenter_assets_public_key_invalid" tools:ignore="MissingTranslation">Public key is not valid.</string>
+
+    <string name="appcenter_assets_server_url_key" tools:ignore="MissingTranslation">assets_server_url_key</string>
+    <string name="appcenter_assets_server_url_title" tools:ignore="MissingTranslation">Assets endpoint url</string>
+    <string name="appcenter_assets_server_url_changed_format" tools:ignore="MissingTranslation">Assets endpoint is successfully changed to %s.</string>
+    <string name="appcenter_assets_server_url_changed" tools:ignore="MissingTranslation">Assets endpoint is successfully reset.</string>
+    <string name="appcenter_assets_server_url_invalid" tools:ignore="MissingTranslation">Url is not valid.</string>
+
     <string name="distribute_key" tools:ignore="MissingTranslation">appcenter_distribute</string>
     <string name="distribute_title" tools:ignore="MissingTranslation">Distribute</string>
 
@@ -74,7 +111,6 @@
 
     <string name="appcenter_start_type_key" tools:ignore="MissingTranslation">appcenter_start_type_key</string>
     <string name="appcenter_start_type_title" tools:ignore="MissingTranslation">Start type</string>
-    <string name="appcenter_start_type_changed" tools:ignore="MissingTranslation">Start type updated. Please close the application completely and relaunch again.</string>
 
     <string name="target_id_key" tools:ignore="MissingTranslation">target_id_key</string>
     <string name="target_id_title" tools:ignore="MissingTranslation">Target Id</string>

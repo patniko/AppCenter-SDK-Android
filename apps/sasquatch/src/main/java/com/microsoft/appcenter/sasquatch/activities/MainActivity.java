@@ -1,7 +1,5 @@
 package com.microsoft.appcenter.sasquatch.activities;
 
-import android.annotation.SuppressLint;
-import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -21,18 +19,20 @@ import com.microsoft.appcenter.AppCenter;
 import com.microsoft.appcenter.analytics.Analytics;
 import com.microsoft.appcenter.analytics.AnalyticsPrivateHelper;
 import com.microsoft.appcenter.analytics.channel.AnalyticsListener;
+import com.microsoft.appcenter.assets.Assets;
 import com.microsoft.appcenter.crashes.Crashes;
 import com.microsoft.appcenter.crashes.CrashesListener;
+import com.microsoft.appcenter.crashes.CrashesPrivateHelper;
 import com.microsoft.appcenter.crashes.model.ErrorReport;
 import com.microsoft.appcenter.distribute.Distribute;
 import com.microsoft.appcenter.push.Push;
 import com.microsoft.appcenter.push.PushListener;
 import com.microsoft.appcenter.sasquatch.R;
+import com.microsoft.appcenter.sasquatch.SasquatchDistributeListener;
 import com.microsoft.appcenter.sasquatch.features.TestFeatures;
 import com.microsoft.appcenter.sasquatch.features.TestFeaturesListAdapter;
 import com.microsoft.appcenter.sasquatch.listeners.SasquatchAnalyticsListener;
 import com.microsoft.appcenter.sasquatch.listeners.SasquatchCrashesListener;
-import com.microsoft.appcenter.sasquatch.listeners.SasquatchDistributeListener;
 import com.microsoft.appcenter.sasquatch.listeners.SasquatchPushListener;
 import com.microsoft.appcenter.utils.async.AppCenterConsumer;
 
@@ -43,6 +43,16 @@ public class MainActivity extends AppCompatActivity {
     public static final String LOG_TAG = "AppCenterSasquatch";
 
     static final String APP_SECRET_KEY = "appSecret";
+
+    static final String DEPLOYMENT_KEY_KEY = "appSecret";
+
+    static final String ASSETS_APP_NAME_KEY = "assetsAppName";
+
+    static final String ASSETS_APP_VERSION_KEY = "assetsAppVersion";
+
+    static final String ASSETS_PUBLIC_KEY = "assetsPublicKey";
+
+    static final String ASSETS_SERVER_URL = "assetsServerUrl";
 
     static final String TARGET_KEY = "target";
 
@@ -60,10 +70,8 @@ public class MainActivity extends AppCompatActivity {
 
     static SharedPreferences sSharedPreferences;
 
-    @SuppressLint("StaticFieldLeak")
     static SasquatchAnalyticsListener sAnalyticsListener;
 
-    @SuppressLint("StaticFieldLeak")
     static SasquatchCrashesListener sCrashesListener;
 
     static SasquatchPushListener sPushListener;
@@ -126,8 +134,6 @@ public class MainActivity extends AppCompatActivity {
         if (!TextUtils.isEmpty(apiUrl)) {
             Distribute.setApiUrl(apiUrl);
         }
-
-        //noinspection deprecation
         Push.setSenderId(SENDER_ID);
 
         /* Set crash attachments. */
@@ -143,11 +149,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         /* Start App Center. */
-        String startType = sSharedPreferences.getString(APPCENTER_START_TYPE, StartType.APP_SECRET.toString());
-        startAppCenter(getApplication(), startType);
+        StartType startType = StartType.valueOf(sSharedPreferences.getString(APPCENTER_START_TYPE, StartType.APP_SECRET.toString()));
+        startAppCenter(startType);
 
-        /* Attach NDK Crash Handler after SDK is initialized. */
-        Crashes.getMinidumpDirectory().thenAccept(new AppCenterConsumer<String>() {
+        /* Attach NDK Crash Handler (if available) after SDK is initialized. */
+        CrashesPrivateHelper.getMinidumpDirectory().thenAccept(new AppCenterConsumer<String>() {
 
             @Override
             public void accept(String path) {
@@ -241,13 +247,9 @@ public class MainActivity extends AppCompatActivity {
         return sPushListener;
     }
 
-    static void startAppCenter(Application application, String startTypeString) {
-        StartType startType = StartType.valueOf(startTypeString);
-        if (startType == StartType.SKIP_START) {
-            return;
-        }
-        String appId = sSharedPreferences.getString(APP_SECRET_KEY, application.getString(R.string.app_secret));
-        String targetId = sSharedPreferences.getString(TARGET_KEY, application.getString(R.string.target_id));
+    private void startAppCenter(StartType startType) {
+        String appId = sSharedPreferences.getString(APP_SECRET_KEY, getString(R.string.app_secret));
+        String targetId = sSharedPreferences.getString(TARGET_KEY, getString(R.string.target_id));
         String appIdArg = "";
         switch (startType) {
             case APP_SECRET:
@@ -259,18 +261,13 @@ public class MainActivity extends AppCompatActivity {
             case BOTH:
                 appIdArg = String.format("appsecret=%s;target=%s", appId, targetId);
                 break;
-            case NO_SECRET:
-                AppCenter.start(application, Analytics.class, Crashes.class, Distribute.class, Push.class);
-                return;
         }
-        AppCenter.start(application, appIdArg, Analytics.class, Crashes.class, Distribute.class, Push.class);
+        AppCenter.start(getApplication(), appIdArg, Analytics.class, Crashes.class, Distribute.class, Push.class, Assets.class);
     }
 
     public enum StartType {
         APP_SECRET,
         TARGET,
-        BOTH,
-        NO_SECRET,
-        SKIP_START
+        BOTH
     }
 }

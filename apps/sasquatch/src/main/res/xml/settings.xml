@@ -36,6 +36,35 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:key="@string/assets_key"
+        android:title="@string/assets_title">
+        <CheckBoxPreference
+            android:dependency="@string/appcenter_state_key"
+            android:key="@string/appcenter_assets_state_key"
+            android:title="@string/appcenter_assets_state_title" />
+        <Preference
+            android:dependency="@string/appcenter_assets_state_key"
+            android:key="@string/appcenter_assets_deployment_key_key"
+            android:title="@string/appcenter_assets_deployment_key_title" />
+        <Preference
+            android:dependency="@string/appcenter_assets_state_key"
+            android:key="@string/appcenter_assets_app_name_key"
+            android:title="@string/appcenter_assets_app_name_title" />
+        <Preference
+            android:dependency="@string/appcenter_assets_state_key"
+            android:key="@string/appcenter_assets_app_version_key"
+            android:title="@string/appcenter_assets_app_version_title" />
+        <Preference
+            android:dependency="@string/appcenter_assets_state_key"
+            android:key="@string/appcenter_assets_public_key_key"
+            android:title="@string/appcenter_assets_public_key_title" />
+        <Preference
+            android:dependency="@string/appcenter_assets_state_key"
+            android:key="@string/appcenter_assets_server_url_key"
+            android:title="@string/appcenter_assets_server_url_title" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="@string/distribute_key"
         android:title="@string/distribute_title">
         <CheckBoxPreference
@@ -78,7 +107,6 @@
         android:key="@string/application_info_key"
         android:title="@string/application_info_title">
         <Preference
-            android:dependency="@string/appcenter_state_key"
             android:key="@string/install_id_key"
             android:title="@string/install_id_title" />
         <Preference

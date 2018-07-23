@@ -22,7 +22,7 @@ import static org.powermock.api.mockito.PowerMockito.mock;
 public class CryptoDefaultFactoryTest {
 
     @Test
-    public void coverNoOpHandlerGenerate() {
+    public void coverNoOpHandlerGenerate() throws Exception {
         new CryptoNoOpHandler().generateKey(CryptoUtils.DEFAULT_CRYPTO_FACTORY, null, null);
     }
 

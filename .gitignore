@@ -44,6 +44,9 @@ captures/
 # Mac files
 .DS_Store
 
+# Google credentials files
+google-services.json
+
 # Localization
 localization/*.zip
 localization/unzip/
@@ -55,3 +58,11 @@ localization/unzip/
 .classpath
 
 /Configure
+
+sdk/gradle/wrapper/gradle-wrapper\.jar
+
+sdk/gradle/wrapper/gradle-wrapper\.properties
+
+sdk/gradlew
+
+sdk/gradlew\.bat

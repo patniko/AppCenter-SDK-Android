@@ -1,10 +1,11 @@
 package com.microsoft.appcenter.sasquatch.activities;
 
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -25,6 +26,7 @@ import com.microsoft.appcenter.AppCenter;
 import com.microsoft.appcenter.AppCenterService;
 import com.microsoft.appcenter.analytics.Analytics;
 import com.microsoft.appcenter.analytics.AnalyticsPrivateHelper;
+import com.microsoft.appcenter.assets.Assets;
 import com.microsoft.appcenter.crashes.Crashes;
 import com.microsoft.appcenter.distribute.Distribute;
 import com.microsoft.appcenter.push.Push;
@@ -40,6 +42,11 @@ import java.util.UUID;
 
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.APPCENTER_START_TYPE;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.APP_SECRET_KEY;
+import static com.microsoft.appcenter.sasquatch.activities.MainActivity.ASSETS_APP_NAME_KEY;
+import static com.microsoft.appcenter.sasquatch.activities.MainActivity.ASSETS_APP_VERSION_KEY;
+import static com.microsoft.appcenter.sasquatch.activities.MainActivity.ASSETS_PUBLIC_KEY;
+import static com.microsoft.appcenter.sasquatch.activities.MainActivity.ASSETS_SERVER_URL;
+import static com.microsoft.appcenter.sasquatch.activities.MainActivity.DEPLOYMENT_KEY_KEY;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.FIREBASE_ENABLED_KEY;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.LOG_URL_KEY;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.TARGET_KEY;
@@ -54,12 +61,9 @@ public class SettingsActivity extends AppCompatActivity {
 
     private static boolean sEventFilterStarted;
 
-    private static boolean sNeedRestartOnStartTypeUpdate;
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        sNeedRestartOnStartTypeUpdate = !MainActivity.sSharedPreferences.getString(APPCENTER_START_TYPE, StartType.APP_SECRET.toString()).equals(StartType.SKIP_START.toString());
         getFragmentManager().beginTransaction()
                 .replace(android.R.id.content, new SettingsFragment())
                 .commit();
@@ -68,6 +72,8 @@ public class SettingsActivity extends AppCompatActivity {
     public static class SettingsFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
 
         private static final String UUID_FORMAT_REGEX = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
+        private static final String APP_NAME_FORMAT_REGEX = "^[a-zA-Z0-9_!]+$";
+        private static final String SEMVER_FORMAT_REGEX = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(\\+[0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*)?$";
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
@@ -149,6 +155,204 @@ public class SettingsActivity extends AppCompatActivity {
                 }
             });
 
+            /* Assets. */
+            initCheckBoxSetting(R.string.appcenter_assets_state_key, R.string.appcenter_assets_state_summary_enabled, R.string.appcenter_assets_state_summary_disabled, new HasEnabled() {
+
+                @Override
+                public boolean isEnabled() {
+                    return Assets.isEnabled().get();
+                }
+
+                @Override
+                public void setEnabled(boolean enabled) {
+                    Assets.setEnabled(enabled);
+                }
+            });
+
+            initClickableSetting(R.string.appcenter_assets_deployment_key_key, MainActivity.sSharedPreferences.getString(DEPLOYMENT_KEY_KEY, getString(R.string.deployment_key)), new Preference.OnPreferenceClickListener() {
+
+                @Override
+                public boolean onPreferenceClick(final Preference preference) {
+                    final EditText input = new EditText(getActivity());
+                    input.setInputType(InputType.TYPE_CLASS_TEXT);
+                    input.setText(MainActivity.sSharedPreferences.getString(DEPLOYMENT_KEY_KEY, getString(R.string.deployment_key)));
+
+                    new AlertDialog.Builder(getActivity()).setTitle(R.string.appcenter_assets_deployment_key_title).setView(input)
+                            .setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String deploymentKey = input.getText().toString();
+                                    if (!TextUtils.isEmpty(deploymentKey)) {
+                                        setKeyValue(DEPLOYMENT_KEY_KEY, deploymentKey);
+                                        Toast.makeText(getActivity(), String.format(getActivity().getString(R.string.appcenter_assets_deployment_key_changed_format), deploymentKey), Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(getActivity(), R.string.appcenter_assets_deployment_key_invalid, Toast.LENGTH_SHORT).show();
+                                    }
+                                    preference.setSummary(MainActivity.sSharedPreferences.getString(DEPLOYMENT_KEY_KEY, getString(R.string.deployment_key)));
+                                }
+                            })
+                            .setNeutralButton(R.string.reset, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String defaultDeploymentKey = getString(R.string.deployment_key);
+                                    setKeyValue(DEPLOYMENT_KEY_KEY, defaultDeploymentKey);
+                                    Toast.makeText(getActivity(), String.format(getActivity().getString(R.string.appcenter_assets_deployment_key_changed_format), defaultDeploymentKey), Toast.LENGTH_SHORT).show();
+                                    preference.setSummary(MainActivity.sSharedPreferences.getString(DEPLOYMENT_KEY_KEY, getString(R.string.deployment_key)));
+                                }
+                            })
+                            .setNegativeButton(R.string.cancel, null)
+                            .create().show();
+                    return true;
+                }
+            });
+
+            initClickableSetting(R.string.appcenter_assets_app_name_key, MainActivity.sSharedPreferences.getString(ASSETS_APP_NAME_KEY, getString(R.string.assets_app_name)), new Preference.OnPreferenceClickListener() {
+
+                @Override
+                public boolean onPreferenceClick(final Preference preference) {
+                    final EditText input = new EditText(getActivity());
+                    input.setInputType(InputType.TYPE_CLASS_TEXT);
+                    input.setText(MainActivity.sSharedPreferences.getString(ASSETS_APP_NAME_KEY, getString(R.string.assets_app_name)));
+
+                    new AlertDialog.Builder(getActivity()).setTitle(R.string.appcenter_assets_app_name_title).setView(input)
+                            .setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String assetsAppName = input.getText().toString();
+                                    if (!TextUtils.isEmpty(assetsAppName) && assetsAppName.matches(APP_NAME_FORMAT_REGEX)) {
+                                        setKeyValue(ASSETS_APP_NAME_KEY, assetsAppName);
+                                        Toast.makeText(getActivity(), String.format(getActivity().getString(R.string.appcenter_assets_app_name_changed_format), assetsAppName), Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(getActivity(), R.string.appcenter_assets_app_name_invalid, Toast.LENGTH_SHORT).show();
+                                    }
+                                    preference.setSummary(MainActivity.sSharedPreferences.getString(ASSETS_APP_NAME_KEY, getString(R.string.assets_app_name)));
+                                }
+                            })
+                            .setNeutralButton(R.string.reset, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String defaultAssetsAppName = getString(R.string.assets_app_name);
+                                    MainActivity.sSharedPreferences.edit().remove(ASSETS_APP_NAME_KEY).apply();
+                                    Toast.makeText(getActivity(), String.format(getActivity().getString(R.string.appcenter_assets_app_name_reset_format), defaultAssetsAppName), Toast.LENGTH_SHORT).show();
+                                    preference.setSummary(defaultAssetsAppName);
+                                }
+                            })
+                            .setNegativeButton(R.string.cancel, null)
+                            .create().show();
+                    return true;
+                }
+            });
+
+            initClickableSetting(R.string.appcenter_assets_app_version_key, MainActivity.sSharedPreferences.getString(ASSETS_APP_VERSION_KEY, getAppVersion()), new Preference.OnPreferenceClickListener() {
+
+                @Override
+                public boolean onPreferenceClick(final Preference preference) {
+                    final EditText input = new EditText(getActivity());
+                    input.setInputType(InputType.TYPE_CLASS_TEXT);
+                    input.setText(MainActivity.sSharedPreferences.getString(ASSETS_APP_VERSION_KEY, getAppVersion()));
+
+                    new AlertDialog.Builder(getActivity()).setTitle(R.string.appcenter_assets_app_version_title).setView(input)
+                            .setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String assetsAppVersion = input.getText().toString();
+                                    if (!TextUtils.isEmpty(assetsAppVersion) && assetsAppVersion.matches(SEMVER_FORMAT_REGEX)) {
+                                        setKeyValue(ASSETS_APP_VERSION_KEY, assetsAppVersion);
+                                        Toast.makeText(getActivity(), String.format(getActivity().getString(R.string.appcenter_assets_app_version_changed_format), assetsAppVersion), Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(getActivity(), R.string.appcenter_assets_app_version_invalid, Toast.LENGTH_SHORT).show();
+                                    }
+                                    preference.setSummary(MainActivity.sSharedPreferences.getString(ASSETS_APP_VERSION_KEY, getAppVersion()));
+                                }
+                            })
+                            .setNeutralButton(R.string.reset, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String defaultAssetsAppVersion = getAppVersion();
+                                    MainActivity.sSharedPreferences.edit().remove(ASSETS_APP_VERSION_KEY).apply();
+                                    Toast.makeText(getActivity(), String.format(getActivity().getString(R.string.appcenter_assets_app_version_reset_format), defaultAssetsAppVersion), Toast.LENGTH_SHORT).show();
+                                    preference.setSummary(defaultAssetsAppVersion);
+                                }
+                            })
+                            .setNegativeButton(R.string.cancel, null)
+                            .create().show();
+                    return true;
+                }
+            });
+
+            initClickableSetting(R.string.appcenter_assets_public_key_key, MainActivity.sSharedPreferences.getString(ASSETS_PUBLIC_KEY, "None"), new Preference.OnPreferenceClickListener() {
+
+                @Override
+                public boolean onPreferenceClick(final Preference preference) {
+                    final EditText input = new EditText(getActivity());
+                    input.setInputType(InputType.TYPE_CLASS_TEXT);
+                    input.setText(MainActivity.sSharedPreferences.getString(ASSETS_PUBLIC_KEY, ""));
+
+                    new AlertDialog.Builder(getActivity()).setTitle(R.string.appcenter_assets_public_key_title).setView(input)
+                            .setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String assetsPublicKey = input.getText().toString();
+                                    if (!TextUtils.isEmpty(assetsPublicKey)) {
+                                        setKeyValue(ASSETS_PUBLIC_KEY, assetsPublicKey);
+                                        Toast.makeText(getActivity(), String.format(getActivity().getString(R.string.appcenter_assets_public_key_changed_format), assetsPublicKey), Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(getActivity(), R.string.appcenter_assets_public_key_invalid, Toast.LENGTH_SHORT).show();
+                                    }
+                                    preference.setSummary(MainActivity.sSharedPreferences.getString(ASSETS_PUBLIC_KEY, "None"));
+                                }
+                            })
+                            .setNeutralButton(R.string.reset, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    MainActivity.sSharedPreferences.edit().remove(ASSETS_PUBLIC_KEY).apply();
+                                    Toast.makeText(getActivity(), String.format(getActivity().getString(R.string.appcenter_assets_public_key_changed)), Toast.LENGTH_SHORT).show();
+                                    preference.setSummary("None");
+                                }
+                            })
+                            .setNegativeButton(R.string.cancel, null)
+                            .create().show();
+                    return true;
+                }
+            });
+
+            initClickableSetting(R.string.appcenter_assets_server_url_key, MainActivity.sSharedPreferences.getString(ASSETS_SERVER_URL, getActivity().getString(R.string.assets_server_url)), new Preference.OnPreferenceClickListener() {
+
+                @Override
+                public boolean onPreferenceClick(final Preference preference) {
+                    final EditText input = new EditText(getActivity());
+                    input.setInputType(InputType.TYPE_CLASS_TEXT);
+                    input.setText(MainActivity.sSharedPreferences.getString(ASSETS_SERVER_URL, getActivity().getString(R.string.assets_server_url)));
+
+                    new AlertDialog.Builder(getActivity()).setTitle(R.string.appcenter_assets_server_url_title).setView(input)
+                            .setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    String assetsServerUrl = input.getText().toString();
+                                    if (!TextUtils.isEmpty(assetsServerUrl) && Patterns.WEB_URL.matcher(assetsServerUrl).matches()) {
+                                        setKeyValue(ASSETS_SERVER_URL, assetsServerUrl);
+                                        Toast.makeText(getActivity(), String.format(getActivity().getString(R.string.appcenter_assets_server_url_changed_format), assetsServerUrl), Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(getActivity(), R.string.appcenter_assets_server_url_invalid, Toast.LENGTH_SHORT).show();
+                                    }
+                                    preference.setSummary(MainActivity.sSharedPreferences.getString(ASSETS_SERVER_URL, getActivity().getString(R.string.assets_server_url)));
+                                }
+                            })
+                            .setNeutralButton(R.string.reset, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    MainActivity.sSharedPreferences.edit().remove(ASSETS_SERVER_URL).apply();
+                                    String defaultEndpoint = getActivity().getString(R.string.assets_server_url);
+                                    Toast.makeText(getActivity(), String.format(getActivity().getString(R.string.appcenter_assets_server_url_changed)), Toast.LENGTH_SHORT).show();
+                                    preference.setSummary(defaultEndpoint);
+                                }
+                            })
+                            .setNegativeButton(R.string.cancel, null)
+                            .create().show();
+                    return true;
+                }
+            });
+
             /* Distribute. */
             initCheckBoxSetting(R.string.appcenter_distribute_state_key, R.string.appcenter_distribute_state_summary_enabled, R.string.appcenter_distribute_state_summary_disabled, new HasEnabled() {
 
@@ -179,7 +383,7 @@ public class SettingsActivity extends AppCompatActivity {
             initCheckBoxSetting(R.string.appcenter_push_firebase_state_key, R.string.appcenter_push_firebase_summary_enabled, R.string.appcenter_push_firebase_summary_disabled, new HasEnabled() {
 
                 @Override
-                @SuppressWarnings({"unchecked", "JavaReflectionMemberAccess", "JavaReflectionInvocation"})
+                @SuppressWarnings("unchecked")
                 public void setEnabled(boolean enabled) {
                     try {
                         if (enabled) {
@@ -187,10 +391,9 @@ public class SettingsActivity extends AppCompatActivity {
                         } else {
                             try {
                                 Class firebaseAnalyticsClass = Class.forName("com.google.firebase.analytics.FirebaseAnalytics");
-                                Object analyticsInstance = firebaseAnalyticsClass.getMethod("getInstance", Context.class).invoke(null, getActivity());
-                                firebaseAnalyticsClass.getMethod("setAnalyticsCollectionEnabled", boolean.class).invoke(analyticsInstance, false);
+                                Object analyticsInstance = firebaseAnalyticsClass.getMethod("getInstance").invoke(null, getActivity());
+                                firebaseAnalyticsClass.getMethod("setAnalyticsCollectionEnabled").invoke(analyticsInstance, true);
                             } catch (Exception ignored) {
-
                                 /* Nothing to handle; this is reached if Firebase isn't being used. */
                             }
                         }
@@ -302,16 +505,6 @@ public class SettingsActivity extends AppCompatActivity {
                     return true;
                 }
             });
-
-            /* When changing start type from SKIP_START to other type, we need to trigger a preference change to update the display from null to actual value. */
-            initChangeableSetting(R.string.install_id_key, String.valueOf(AppCenter.getInstallId().get()), new Preference.OnPreferenceChangeListener() {
-
-                @Override
-                public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    preference.setSummary(String.valueOf(AppCenter.getInstallId().get()));
-                    return true;
-                }
-            });
             initClickableSetting(R.string.app_secret_key, MainActivity.sSharedPreferences.getString(APP_SECRET_KEY, getString(R.string.app_secret)), new Preference.OnPreferenceClickListener() {
 
                 @Override
@@ -350,27 +543,12 @@ public class SettingsActivity extends AppCompatActivity {
             });
 
             /* Miscellaneous. */
-            String initialStartType = MainActivity.sSharedPreferences.getString(APPCENTER_START_TYPE, StartType.APP_SECRET.toString());
-            initChangeableSetting(R.string.appcenter_start_type_key, initialStartType, new Preference.OnPreferenceChangeListener() {
+            initChangeableSetting(R.string.appcenter_start_type_key, MainActivity.sSharedPreferences.getString(APPCENTER_START_TYPE, StartType.APP_SECRET.toString()), new Preference.OnPreferenceChangeListener() {
 
                 @Override
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    if (newValue == null) {
-                        return true;
-                    }
-                    String startValue = newValue.toString();
-                    setKeyValue(APPCENTER_START_TYPE, startValue);
+                    setKeyValue(APPCENTER_START_TYPE, (String) newValue);
                     preference.setSummary(MainActivity.sSharedPreferences.getString(APPCENTER_START_TYPE, null));
-
-                    /* Try to start now, this tests double calls log an error as well as valid call if previous type was none. */
-                    MainActivity.startAppCenter(getActivity().getApplication(), startValue);
-
-                    /* Invite to restart app to take effect. */
-                    if (sNeedRestartOnStartTypeUpdate) {
-                        Toast.makeText(getActivity(), R.string.appcenter_start_type_changed, Toast.LENGTH_SHORT).show();
-                    } else {
-                        sNeedRestartOnStartTypeUpdate = true;
-                    }
                     return true;
                 }
             });
@@ -587,6 +765,15 @@ public class SettingsActivity extends AppCompatActivity {
             return MainActivity.sSharedPreferences.getBoolean(FIREBASE_ENABLED_KEY, false);
         }
 
+        private String getAppVersion() {
+            try {
+                PackageInfo pInfo = getActivity().getApplicationContext().getPackageManager().getPackageInfo(getActivity().getApplicationContext().getPackageName(), 0);
+                return pInfo.versionName;
+            } catch (PackageManager.NameNotFoundException e) {
+                return "1.0";
+            }
+        }
+
         private String getCrashesTextAttachmentSummary() {
             String textAttachment = MainActivity.sCrashesListener.getTextAttachment();
             if (!TextUtils.isEmpty(textAttachment)) {
@@ -614,7 +801,6 @@ public class SettingsActivity extends AppCompatActivity {
 
 
         private interface HasEnabled {
-
             boolean isEnabled();
 
             void setEnabled(boolean enabled);

@@ -7,6 +7,8 @@ import android.view.View;
 import android.widget.AdapterView;
 
 import com.microsoft.appcenter.sasquatch.R;
+import com.microsoft.appcenter.sasquatch.activities.AssetsActivity;
+import com.microsoft.appcenter.sasquatch.activities.AssetsActivitySync;
 import com.microsoft.appcenter.sasquatch.activities.CrashActivity;
 import com.microsoft.appcenter.sasquatch.activities.CustomPropertiesActivity;
 import com.microsoft.appcenter.sasquatch.activities.DeviceInfoActivity;
@@ -22,9 +24,7 @@ import java.util.List;
 import static com.microsoft.appcenter.sasquatch.activities.MainActivity.LOG_TAG;
 
 public final class TestFeatures {
-
     private static List<TestFeatureModel> sTestFeatureModels;
-
     private static WeakReference<Activity> sParentActivity;
 
     public static void initialize(Activity parentActivity) {
@@ -37,6 +37,9 @@ public final class TestFeatures {
         sTestFeatureModels.add(new TestFeatureTitle(R.string.crashes_title));
         sTestFeatureModels.add(new TestFeature(R.string.title_crashes, R.string.description_crashes, CrashActivity.class));
         sTestFeatureModels.add(new TestFeature(R.string.title_error, R.string.description_error, ManagedErrorActivity.class));
+        sTestFeatureModels.add(new TestFeatureTitle(R.string.title_assets));
+        sTestFeatureModels.add(new TestFeature(R.string.title_assets, R.string.description_assets, AssetsActivity.class));
+        sTestFeatureModels.add(new TestFeature(R.string.title_sync, R.string.description_sync, AssetsActivitySync.class));
         sTestFeatureModels.add(new TestFeatureTitle(R.string.miscellaneous_title));
         try {
             Class classCustomProperties = Class.forName("com.microsoft.appcenter.CustomProperties");
@@ -76,7 +79,6 @@ public final class TestFeatures {
     }
 
     abstract static class TestFeatureModel {
-
         private final String mTitle;
 
         TestFeatureModel(int title) {
@@ -89,16 +91,13 @@ public final class TestFeatures {
     }
 
     static class TestFeatureTitle extends TestFeatureModel {
-
         TestFeatureTitle(int title) {
             super(title);
         }
     }
 
     static class TestFeature extends TestFeatureModel {
-
         private final String mDescription;
-
         private final View.OnClickListener mOnClickListener;
 
         TestFeature(int title, int description, Class<? extends Activity> clazz) {
