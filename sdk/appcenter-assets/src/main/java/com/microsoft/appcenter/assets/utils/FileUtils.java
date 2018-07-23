@@ -15,6 +15,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
@@ -219,6 +220,29 @@ public class FileUtils {
                 throw new AssetsFinalizeException(OperationType.READ, e);
             }
         }
+    }
+
+    /**
+     * Reads the contents of file to a byte array.
+     *
+     * @param file file to be read.
+     * @return byte array with contents of the file.
+     * @throws IOException read/write error occurred while accessing the file system.
+     */
+    public byte[] readFileToByteArray(File file) throws IOException {
+        byte[] buffer = new byte[(int) file.length()];
+        InputStream ios = null;
+        try {
+            ios = new FileInputStream(file);
+            if (ios.read(buffer) == -1) {
+                throw new IOException("EOF reached while trying to read the whole file");
+            }
+        } finally {
+            if (ios != null) {
+                ios.close();
+            }
+        }
+        return buffer;
     }
 
     /**
