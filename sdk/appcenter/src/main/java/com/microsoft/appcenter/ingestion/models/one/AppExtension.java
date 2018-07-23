@@ -23,11 +23,6 @@ public class AppExtension implements Model {
     private static final String VER = "ver";
 
     /**
-     * Name property.
-     */
-    private static final String NAME = "name";
-
-    /**
      * Locale property.
      */
     private static final String LOCALE = "locale";
@@ -41,11 +36,6 @@ public class AppExtension implements Model {
      * Application version.
      */
     private String ver;
-
-    /**
-     * Application name.
-     */
-    private String name;
 
     /**
      * Application locale.
@@ -68,24 +58,6 @@ public class AppExtension implements Model {
      */
     public void setId(String id) {
         this.id = id;
-    }
-
-    /**
-     * Get application name.
-     *
-     * @return application name.
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Set application name.
-     *
-     * @param name application name.
-     */
-    public void setName(String name) {
-        this.name = name;
     }
 
     /**
@@ -128,7 +100,6 @@ public class AppExtension implements Model {
     public void read(JSONObject object) throws JSONException {
         setId(object.optString(ID, null));
         setVer(object.optString(VER, null));
-        setName(object.optString(NAME, null));
         setLocale(object.optString(LOCALE, null));
     }
 
@@ -136,7 +107,6 @@ public class AppExtension implements Model {
     public void write(JSONStringer writer) throws JSONException {
         JSONUtils.write(writer, ID, getId());
         JSONUtils.write(writer, VER, getVer());
-        JSONUtils.write(writer, NAME, getName());
         JSONUtils.write(writer, LOCALE, getLocale());
     }
 
@@ -150,7 +120,6 @@ public class AppExtension implements Model {
 
         if (id != null ? !id.equals(that.id) : that.id != null) return false;
         if (ver != null ? !ver.equals(that.ver) : that.ver != null) return false;
-        if (name != null ? !name.equals(that.name) : that.name != null) return false;
         return locale != null ? locale.equals(that.locale) : that.locale == null;
     }
 
@@ -158,7 +127,6 @@ public class AppExtension implements Model {
     public int hashCode() {
         int result = id != null ? id.hashCode() : 0;
         result = 31 * result + (ver != null ? ver.hashCode() : 0);
-        result = 31 * result + (name != null ? name.hashCode() : 0);
         result = 31 * result + (locale != null ? locale.hashCode() : 0);
         return result;
     }
