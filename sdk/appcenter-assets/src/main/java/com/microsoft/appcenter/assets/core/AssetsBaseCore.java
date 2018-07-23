@@ -590,20 +590,26 @@ public abstract class AssetsBaseCore {
                         mConfirmationDialog.shouldInstallUpdate(updateDialogOptions.getTitle(), finalMessage, acceptButtonText, declineButtonText, new AssetsConfirmationCallback() {
 
                             @Override
-                            public void onResult(boolean userAcceptsProposal) {
-                                if (userAcceptsProposal) {
-                                    try {
-                                        doDownloadAndInstall(remotePackage, syncOptions, configuration);
-                                        mState.mSyncInProgress = false;
-                                    } catch (Exception e) {
-                                        notifyAboutSyncStatusChange(UNKNOWN_ERROR);
-                                        mState.mSyncInProgress = false;
-                                        AppCenterLog.error(Assets.LOG_TAG, e.getMessage());
+                            public void onResult(final boolean userAcceptsProposal) {
+
+                                // Must make a call on background thread otherwise the UI gets blocked and download progress is not displayed.
+                                new Thread(new Runnable() {
+                                    @Override public void run() {
+                                        if (userAcceptsProposal) {
+                                            try {
+                                                doDownloadAndInstall(remotePackage, syncOptions, configuration);
+                                                mState.mSyncInProgress = false;
+                                            } catch (Exception e) {
+                                                notifyAboutSyncStatusChange(UNKNOWN_ERROR);
+                                                mState.mSyncInProgress = false;
+                                                AppCenterLog.error(Assets.LOG_TAG, e.getMessage());
+                                            }
+                                        } else {
+                                            notifyAboutSyncStatusChange(UPDATE_IGNORED);
+                                            mState.mSyncInProgress = false;
+                                        }
                                     }
-                                } else {
-                                    notifyAboutSyncStatusChange(UPDATE_IGNORED);
-                                    mState.mSyncInProgress = false;
-                                }
+                                }).start();
                             }
 
                             @Override
