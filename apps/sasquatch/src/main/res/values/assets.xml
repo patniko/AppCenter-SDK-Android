@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="package_info_format" tools:ignore="MissingTranslation">%sCurrent package info:%s %s</string>
-    <string name="rm_package_info_format" tools:ignore="MissingTranslation">%sAvailable package info:%s %s</string>
+    <string name="package_info" tools:ignore="MissingTranslation">Current package info</string>
+    <string name="rm_package_info" tools:ignore="MissingTranslation">Available package info</string>
     <string name="assets_no_package">no package installed.</string>
     <string name="assets_no_rm_package">no package available.</string>
     <string name="assets_go_to_installation"><![CDATA[Go to installation >]]></string>
@@ -24,4 +24,7 @@
     <string name="assets_sync_checking">Checking for update</string>
     <string name="assets_sync_awaiting">Awaiting user action</string>
     <string name="assets_sync_downloading">Downloading package</string>
+    <string name="assets_path_to_update_lbl">Path to update: </string>
+    <string name="assets_deployment_key_lbl">Deployment key: </string>
+    <string name="assets_app_version_lbl">App version:</string>
 </resources>

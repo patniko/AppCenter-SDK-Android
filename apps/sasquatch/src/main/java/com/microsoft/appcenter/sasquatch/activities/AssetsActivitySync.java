@@ -8,6 +8,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.microsoft.appcenter.assets.Assets;
@@ -40,6 +41,9 @@ public class AssetsActivitySync extends AppCompatActivity implements AssetsSyncS
     private TextView mDownloadProgressLbl;
     private TextView mSyncStatusLbl;
     private TextView mNoContentLbl;
+    private LinearLayout mUpdatePathView;
+    private TextView mUpdatePathLbl;
+    private TextView mUpdatePathLblExpanded;
     private Button mSyncBtn;
     private Button mClearUpdatesBtn;
     private ImageView mContentView;
@@ -51,6 +55,19 @@ public class AssetsActivitySync extends AppCompatActivity implements AssetsSyncS
         mDownloadProgressLbl = findViewById(R.id.download_progress_lbl);
         mSyncStatusLbl = findViewById(R.id.sync_status_lbl);
         mNoContentLbl = findViewById(R.id.no_content_lbl);
+        mUpdatePathLbl = findViewById(R.id.update_path_lbl);
+        mUpdatePathLbl.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) {
+                expand();
+            }
+        });
+        mUpdatePathLblExpanded = findViewById(R.id.update_path_lbl_expanded);
+        mUpdatePathLblExpanded.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) {
+                hide();
+            }
+        });
+        mUpdatePathView = findViewById(R.id.update_path_block);
         mSyncBtn = findViewById(R.id.sync_btn);
         mClearUpdatesBtn = findViewById(R.id.clear_updates_btn);
         mContentView = findViewById(R.id.content_view);
@@ -65,10 +82,21 @@ public class AssetsActivitySync extends AppCompatActivity implements AssetsSyncS
             @Override public void onClick(View view) {
                 assets.clearUpdates();
                 updateCurrentPackageInfo();
+                mUpdatePathView.setVisibility(GONE);
             }
         });
 
         setupAssets();
+    }
+
+    private void expand() {
+        mUpdatePathLbl.setVisibility(GONE);
+        mUpdatePathLblExpanded.setVisibility(View.VISIBLE);
+    }
+
+    private void hide() {
+        mUpdatePathLbl.setVisibility(View.VISIBLE);
+        mUpdatePathLblExpanded.setVisibility(View.GONE);
     }
 
     private void setupAssets() {
@@ -197,7 +225,6 @@ public class AssetsActivitySync extends AppCompatActivity implements AssetsSyncS
     private void updateCurrentPackageInfo() {
         assets.getUpdateMetadata().thenAccept(new AppCenterConsumer<AssetsLocalPackage>() {
             @Override public void accept(AssetsLocalPackage assetsLocalPackage) {
-                //TODO: display path
                 boolean imageExists = true;
                 mContentView.setVisibility(assetsLocalPackage == null ? GONE : View.VISIBLE);
                 mNoContentLbl.setVisibility(assetsLocalPackage == null ? View.VISIBLE : GONE);
@@ -205,7 +232,12 @@ public class AssetsActivitySync extends AppCompatActivity implements AssetsSyncS
                     String entry = assets.getCurrentUpdateEntryPoint();
                     if (entry == null) {
                         imageExists = false;
+                        mUpdatePathView.setVisibility(View.GONE);
                     } else {
+                        mUpdatePathView.setVisibility(View.VISIBLE);
+                        String prettyPrint = entry.replace(getApplicationContext().getFilesDir().getPath() + "/", "");
+                        mUpdatePathLbl.setText(prettyPrint);
+                        mUpdatePathLblExpanded.setText(prettyPrint);
                         File entryFile = new File(entry);
                         if (entryFile.exists()) {
                             Drawable drawable = Drawable.createFromPath(entry);

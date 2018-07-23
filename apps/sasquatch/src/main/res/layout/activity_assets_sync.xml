@@ -34,6 +34,45 @@
         android:visibility="gone"/>
 
     <LinearLayout
+        android:id="@+id/update_path_block"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/assets_path_to_update_lbl"
+            android:textColor="@android:color/black"
+            android:textSize="16dp"/>
+
+        <TextView
+            android:id="@+id/update_path_lbl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawableBottom="@drawable/ic_arrow_down"
+            android:drawablePadding="-8dp"
+            android:ellipsize="end"
+            android:gravity="start"
+            android:lines="1"
+            android:textColor="#6b6b6b"
+            android:textSize="14dp"/>
+
+        <TextView
+            android:id="@+id/update_path_lbl_expanded"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawableBottom="@drawable/ic_arrow_up"
+            android:drawablePadding="-8dp"
+            android:gravity="start"
+            android:textColor="#6b6b6b"
+            android:textSize="14dp"
+            android:visibility="gone"/>
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
