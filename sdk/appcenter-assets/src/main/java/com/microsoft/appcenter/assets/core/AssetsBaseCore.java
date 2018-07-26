@@ -963,15 +963,19 @@ public abstract class AssetsBaseCore {
         installUpdate(localPackage, resolvedInstallMode, syncOptions.getMinimumBackgroundDuration());
         notifyAboutSyncStatusChange(UPDATE_INSTALLED);
         mState.mSyncInProgress = false;
-        if (resolvedInstallMode == IMMEDIATE && syncOptions.shouldRestart()) {
-            try {
-                mManagers.mRestartManager.restartApp(false);
-            } catch (AssetsMalformedDataException e) {
-                throw new AssetsNativeApiCallException(e);
+        if (resolvedInstallMode == IMMEDIATE) {
+            if (syncOptions.shouldRestart()) {
+                try {
+                    mManagers.mRestartManager.restartApp(false);
+                } catch (AssetsMalformedDataException e) {
+                    throw new AssetsNativeApiCallException(e);
+                }
+            } else {
+                mState.mDidUpdate = true;
+                mManagers.mRestartManager.clearPendingRestart();
             }
-        } else {
-            mManagers.mRestartManager.clearPendingRestart();
         }
+
     }
 
     /**
